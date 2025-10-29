@@ -5,4 +5,4 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/m/eelcovv/fleetmaster)](https://img.shields.io/github/commit-activity/m/eelcovv/fleetmaster)
 [![License](https://img.shields.io/github/license/eelcovv/fleetmaster)](https://img.shields.io/github/license/eelcovv/fleetmaster)
 
-A wrapper to run capytaine in batch from the commandline
+A command-line tool to run batch processes of [Capytaine](https://capytaine.github.io/) simulations for hydrodynamic analysis.
