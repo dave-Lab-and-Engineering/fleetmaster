@@ -1,0 +1,10 @@
+.md-typeset figure {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.md-typeset figcaption {
+  margin-top: 0.2em;
+  font-size: 0.9em;
+  color: var(--md-default-fg-color--light);
+}
