@@ -1,0 +1,24 @@
+name: Deploy Draft Documentation
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "The branch to deploy"
+        required: true
+        default: "documentation"
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-python-env
+
+      - name: Deploy documentation
+        run: uv run mkdocs gh-deploy --force
