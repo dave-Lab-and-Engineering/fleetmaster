@@ -118,6 +118,7 @@ module = [
     "capytaine.*",
     "click",
     "h5py.*",
+    "mafredo.*",
     "numpy.*",
     "pandas",
     "PySide6.*",

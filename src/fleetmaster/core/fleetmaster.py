@@ -3,6 +3,8 @@ This module defines the main FleetMaster class, which provides the primary API
 for interacting with FleetMaster databases.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 from typing import Any
@@ -216,7 +218,7 @@ class FleetMaster:
             waterdepth = self._water_depth
 
         except Exception:
-            logger.exception("Failed to create Hyddb1 object")
+            logger.exception("Failed to create Hyddb1 object:")
             return None, None, None, None
         else:
             return hyddb, application_point, velocity, waterdepth
