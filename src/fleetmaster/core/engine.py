@@ -551,16 +551,23 @@ def _run_pipeline_for_mesh(
 
     # Use mesh-specific wave periods and directions if provided, otherwise fall back to global settings.
     periods_to_use = engine_mesh.config.wave_periods or settings.wave_periods
-    wave_periods = periods_to_use if isinstance(periods_to_use, list) else [periods_to_use]
+    wave_periods_untyped = periods_to_use if isinstance(periods_to_use, list) else [periods_to_use]
+    wave_periods = [float(p) for p in wave_periods_untyped]
     wave_frequencies = (2 * np.pi / np.array(wave_periods)).tolist()
 
     directions_to_use = engine_mesh.config.wave_directions or settings.wave_directions
-    wave_directions_deg = directions_to_use if isinstance(directions_to_use, list) else [directions_to_use]
+    wave_directions_deg_untyped = directions_to_use if isinstance(directions_to_use, list) else [directions_to_use]
+    wave_directions_deg = [float(d) for d in wave_directions_deg_untyped]
     wave_directions_rad = np.deg2rad(wave_directions_deg).tolist()
 
-    water_depths = settings.water_depth if isinstance(settings.water_depth, list) else [settings.water_depth]
-    water_levels = settings.water_level if isinstance(settings.water_level, list) else [settings.water_level]
-    forwards_speeds = settings.forward_speed if isinstance(settings.forward_speed, list) else [settings.forward_speed]
+    water_depths_untyped = settings.water_depth if isinstance(settings.water_depth, list) else [settings.water_depth]
+    water_depths = [float(d) for d in water_depths_untyped]
+    water_levels_untyped = settings.water_level if isinstance(settings.water_level, list) else [settings.water_level]
+    water_levels = [float(lvl) for lvl in water_levels_untyped]
+    forwards_speeds_untyped = (
+        settings.forward_speed if isinstance(settings.forward_speed, list) else [settings.forward_speed]
+    )
+    forwards_speeds = [float(s) for s in forwards_speeds_untyped]
 
     _log_pipeline_parameters(
         engine_mesh=engine_mesh,

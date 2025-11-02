@@ -20,10 +20,14 @@ def load_meshes_from_hdf5(
     with h5py.File(hdf5_path, "r") as f:
         for name in mesh_names:
             group = f.get(f"meshes/{name}")
-            if not group:
-                logger.debug("Mesh %r not found. Continue without failing", name)
+            if not isinstance(group, h5py.Group):
+                logger.warning(f"Mesh group '{name}' not found or not a group.")
                 continue
-            raw = group["stl_content"][()]
+            stl_dataset = group.get("stl_content")
+            if not isinstance(stl_dataset, h5py.Dataset):
+                logger.warning(f"'stl_content' in mesh group '{name}' is not a dataset.")
+                continue
+            raw = stl_dataset[()]
             try:
                 mesh = trimesh.load_mesh(io.BytesIO(raw.tobytes()), file_type="stl")
                 if isinstance(mesh, trimesh.Trimesh):

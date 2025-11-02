@@ -4,7 +4,14 @@ from pathlib import Path
 import h5py
 import numpy as np
 import trimesh
-from scipy.spatial import cKDTree
+
+# import cKDTree directly so linters and static type checkers can detect it,
+# and provide a clear ImportError if it's not available at runtime
+try:
+    from scipy.spatial import cKDTree  # type: ignore  # noqa: PGH003
+except Exception as e:
+    msg = "scipy.spatial.cKDTree is required for computing Chamfer distances"
+    raise ImportError(msg) from e
 
 from fleetmaster.core.engine import (
     EngineMesh,
@@ -189,15 +196,19 @@ def find_best_matching_mesh(
     with h5py.File(hdf5_path, "r") as f:
         if "base_mesh" not in f.attrs:
             raise HDF5AttributeError(attribute_name="base_mesh")
-        base_mesh_name = f.attrs["base_mesh"]
+        base_mesh_name = str(f.attrs["base_mesh"])
 
         if MESH_GROUP_NAME not in f:
             logger.warning(f"No '{MESH_GROUP_NAME}' group found in HDF5 file. Cannot find any meshes.")
             return None, np.inf
 
         mesh_group = f[MESH_GROUP_NAME]
+        if not isinstance(mesh_group, h5py.Group):
+            logger.warning(f"'{MESH_GROUP_NAME}' in HDF5 file is not a group as expected.")
+            return None, np.inf
+
         # Candidates are all meshes that are not the base mesh
-        candidate_mesh_names = [name for name in mesh_group if name != base_mesh_name]
+        candidate_mesh_names = [str(name) for name in mesh_group if name != base_mesh_name]
 
     if not base_mesh_name or not candidate_mesh_names:
         logger.warning("No base mesh or candidate meshes found to perform a match.")

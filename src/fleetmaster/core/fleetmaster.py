@@ -88,7 +88,7 @@ class FleetMaster:
         translation = list(tf.translation_from_matrix(transform))
         # The 'sxyz' convention means rotations are applied in order: roll (x), pitch (y), yaw (z).
         rotation_rad = tf.euler_from_matrix(transform, "sxyz")
-        rotation_deg = np.rad2deg(rotation_rad).tolist()
+        rotation_deg = np.rad2deg(np.asarray(rotation_rad)).tolist()
 
         logger.info("Starting fitting process...")
         logger.info(f"  - Target Translation: {translation}")
