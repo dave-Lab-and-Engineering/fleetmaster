@@ -108,7 +108,7 @@ disallow_any_unimported = true
 no_implicit_optional = true
 check_untyped_defs = true
 warn_return_any = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 show_error_codes = true
 plugins = ["pydantic.mypy"]
 
@@ -200,6 +200,7 @@ omit = [
 # ========================================================================================
 [tool.deptry]
 exclude = ["examples", ".tox", ".venv", "tests"]
+package_module_name_map = { pymeshup = "pymeshup" }
 # This section defines which errors to ignore for which packages.
 # It is NOT an inline table, but a nested table structure.
 

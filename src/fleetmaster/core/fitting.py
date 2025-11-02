@@ -8,7 +8,7 @@ import trimesh
 # import cKDTree directly so linters and static type checkers can detect it,
 # and provide a clear ImportError if it's not available at runtime
 try:
-    from scipy.spatial import cKDTree  # type: ignore  # noqa: PGH003
+    from scipy.spatial import cKDTree  # noqa: PGH003  # type: ignore
 except Exception as e:
     msg = "scipy.spatial.cKDTree is required for computing Chamfer distances"
     raise ImportError(msg) from e
