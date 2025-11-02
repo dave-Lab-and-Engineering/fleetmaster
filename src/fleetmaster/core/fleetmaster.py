@@ -7,8 +7,10 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import h5py
 import numpy as np
 import trimesh.transformations as tf
+from mafredo import Hyddb1
 
 from .fitting import find_best_matching_mesh
 
@@ -37,6 +39,7 @@ class FleetMaster:
 
         self._best_match_name: str | None = None
         self._match_error: float = np.inf
+        self._best_match_hydro_data: dict[str, Any] | None = None
 
     def set_waterdepth(self, water_depth: float) -> None:
         """
@@ -107,8 +110,46 @@ class FleetMaster:
 
         if best_match:
             logger.info(f"Fitting complete. Best match: '{best_match}' with error: {min_distance:.4f}")
+            self._load_hydro_data(best_match)
         else:
             logger.warning("Fitting complete, but no suitable match was found.")
+
+    def _load_hydro_data(self, mesh_name: str) -> None:
+        """Loads hydrodynamic data for the given mesh name from the HDF5 file."""
+        logger.info(f"Loading hydrodynamic data for mesh '{mesh_name}'...")
+        try:
+            with h5py.File(self.filename, "r") as f:
+                group_path = f"meshes/{mesh_name}"
+                group = f.get(group_path)
+                if not isinstance(group, h5py.Group):
+                    logger.warning(f"No group '{group_path}' found in HDF5 file or not a group.")
+                    self._best_match_hydro_data = None
+                    return
+
+                required_datasets = [
+                    "omega",
+                    "added_mass",
+                    "damping",
+                    "directions",
+                    "force_amps",
+                    "force_phase_rad",
+                ]
+
+                hydro_data = {}
+                for ds_name in required_datasets:
+                    dataset = group.get(ds_name)
+                    if not isinstance(dataset, h5py.Dataset):
+                        logger.error(f"Dataset '{ds_name}' not found in group '{group_path}' or not a dataset.")
+                        self._best_match_hydro_data = None
+                        return
+                    hydro_data[ds_name] = dataset[()]
+
+                self._best_match_hydro_data = hydro_data
+                logger.info("Successfully loaded hydrodynamic data.")
+
+        except Exception:
+            logger.exception(f"Failed to load hydrodynamic data for mesh '{mesh_name}'")
+            self._best_match_hydro_data = None
 
     def get_match_error(self) -> float:
         """
@@ -141,3 +182,41 @@ class FleetMaster:
         grid = None
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
+
+    def get_hyddb1(
+        self,
+    ) -> tuple[Hyddb1 | None, tuple[float, float, float] | None, float | None, float | None]:
+        """
+        Returns the hydrodynamic database (Hyddb1), application point, velocity, and water depth.
+
+        Returns:
+            A tuple containing:
+            - Hyddb1: The hydrodynamic database object from mafredo.
+            - tuple: The application point (origin).
+            - float: The velocity.
+            - float: The water depth.
+        """
+        if not self._best_match_hydro_data:
+            logger.warning("No hydrodynamic data loaded. Run fit() first.")
+            return None, None, None, None
+
+        try:
+            hyddb = Hyddb1()
+            hyddb.set_data(
+                omega=self._best_match_hydro_data["omega"],
+                added_mass=self._best_match_hydro_data["added_mass"],
+                damping=self._best_match_hydro_data["damping"],
+                directions=self._best_match_hydro_data["directions"],
+                force_amps=self._best_match_hydro_data["force_amps"],
+                force_phase_rad=self._best_match_hydro_data["force_phase_rad"],
+            )
+
+            application_point = self._origin
+            velocity = self._velocity
+            waterdepth = self._water_depth
+
+        except Exception:
+            logger.exception("Failed to create Hyddb1 object")
+            return None, None, None, None
+        else:
+            return hyddb, application_point, velocity, waterdepth

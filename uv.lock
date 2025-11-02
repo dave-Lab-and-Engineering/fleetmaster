@@ -900,6 +900,7 @@ dependencies = [
     { name = "click" },
     { name = "h5netcdf" },
     { name = "h5py" },
+    { name = "mafredo" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pydantic" },
@@ -948,6 +949,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.8" },
     { name = "h5netcdf", specifier = ">=1.7.0" },
     { name = "h5py", specifier = ">=3.15.0" },
+    { name = "mafredo", git = "https://github.com/eelcovv/mafredo.git" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "pyglet", specifier = "<2" },
@@ -1521,8 +1523,8 @@ wheels = [
 
 [[package]]
 name = "mafredo"
-version = "2025.3.2"
-source = { registry = "https://pypi.org/simple" }
+version = "0.0.post124+g6c1c4ab95"
+source = { git = "https://github.com/eelcovv/mafredo.git#6c1c4ab953bd80b66613e8e7fafaeeff07ee69eb" }
 dependencies = [
     { name = "capytaine" },
     { name = "matplotlib" },
@@ -1532,10 +1534,6 @@ dependencies = [
     { name = "pyyaml" },
     { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "xarray", version = "2025.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/f2/34/054a2c9010fe4068b4b7fca8a59313ff7b844bb192ac39bb503da0206c8a/mafredo-2025.3.2.tar.gz", hash = "sha256:16c93baf897316a0e53f15ace6c9a3d8c19625c54f753bfd57c9f1fdc8bef84e", size = 1742988, upload-time = "2025-10-13T08:59:27.138Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/53/70/0e9f431090a1b7082b6fdacb094243899a05fa5c4307ff5883489ae077b2/mafredo-2025.3.2-py3-none-any.whl", hash = "sha256:dfac8e2311027b19609c38e0a374202aae82c6bd1e85428918234560a2182fa3", size = 30456, upload-time = "2025-10-13T08:59:26.01Z" },
 ]
 
 [[package]]
