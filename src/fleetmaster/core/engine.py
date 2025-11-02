@@ -263,7 +263,8 @@ def _prepare_capytaine_body(
     boat.keep_immersed_part(free_surface=water_level)
 
     # Check for empty mesh after keep_immersed_part
-    if boat.mesh.vertices.size == 0 or boat.mesh.faces.size == 0:
+    # Use np.asarray(...).size to ensure we have a numpy ndarray (satisfies the type checker)
+    if np.asarray(boat.mesh.vertices).size == 0 or np.asarray(boat.mesh.faces).size == 0:
         logger.warning("Resulting mesh is empty after keep_immersed_part. Check if water_level is above the mesh.")
 
     # Important: do this step after keep_immersed_part in order to keep the body constent with the cut mesh
