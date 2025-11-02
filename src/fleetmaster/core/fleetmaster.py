@@ -187,7 +187,7 @@ class FleetMaster:
 
     def get_hyddb1(
         self,
-    ) -> tuple[Hyddb1 | None, tuple[float, float, float] | None, float | None, float | None]:
+    ) -> tuple[Hyddb1 | None, tuple[float, float, float] | None, float | None, float | None]:  # type: ignore[no-any-unimported]
         """
         Returns the hydrodynamic database (Hyddb1), application point, velocity, and water depth.
 
