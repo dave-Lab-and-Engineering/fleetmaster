@@ -8,6 +8,18 @@ Fleetmaster is used to generate an HDF5 database containing a collection of Capy
 
 Each HDF5 database is built around a single **base mesh**. This base mesh serves as the fundamental reference geometry. 
 
+
+
+![image-20251104162052926](./image-20251104162052926.png)
+
+On this base-mesh we define a base_origin_position. If the STL was provided using a good convention then this can be left at (0,0,0).
+
+It is highly recommended to textually describe which point on the vessel the base-origin defines. In the example above this could be "Aft perpendicular, keel, centerline".
+
+
+
+**On the base-mesh, we** 
+
 **The origin of the base-mesh should correspond to a known point POINT ON THE VESSEL.**
 
 **The scale of the mesh should be meters**
