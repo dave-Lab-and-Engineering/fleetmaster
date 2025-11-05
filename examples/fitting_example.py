@@ -8,6 +8,9 @@ fit for a given transformation from a pre-existing HDF5 database.
 import logging
 from pathlib import Path
 
+import numpy as np
+import trimesh.transformations as tf
+
 from fleetmaster import FleetMaster
 
 # Configure basic logging to see the output from the fitting function
@@ -26,12 +29,20 @@ def _run_and_print_test_case(
 ):
     """Runs a single fitting test case and prints the results."""
     print(f"\n\n--- Running Test Case {case_number}: {description} ---")
-    logger.info(f"Searching for best match for translation={target_translation}, rotation={target_rotation}...\n")
+    logger.info(f"Fitting for translation={target_translation}, rotation={target_rotation}...\n")
 
-    best_match, distance = fleet.find_best_matching_mesh(
-        target_translation=target_translation,
-        target_rotation=target_rotation,
+    # Create a 4x4 transformation matrix from rotation and translation
+    transform = tf.compose_matrix(
+        translate=target_translation,
+        angles=np.deg2rad(target_rotation),
     )
+
+    # Run the fitting process
+    fleet.fit(transform=transform)
+
+    # Get the results
+    best_match = fleet.get_best_match_name()
+    distance = fleet.get_match_error()
 
     print(f"\n--- Result for Test Case {case_number} ---")
     if best_match:
