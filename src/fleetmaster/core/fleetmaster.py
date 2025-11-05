@@ -43,7 +43,7 @@ class FleetMaster:
         Args:
             filename: The path to the HDF5 database file.
         """
-        self = base_mesh_name = base_mesh_name
+        self.base_mesh_name = base_mesh_name
 
         self.filename = Path(filename)
         self._loaded_meshes: dict[str, Any] = {}
