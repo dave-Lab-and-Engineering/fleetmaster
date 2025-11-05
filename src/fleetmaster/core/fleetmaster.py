@@ -36,17 +36,27 @@ class FleetMaster:
     the fitting process to find the best matching mesh.
     """
 
-    def __init__(self, filename: str | Path, base_mesh_name: str | None = None) -> None:
+    def __init__(self, filename: str | Path) -> None:
         """
-        Initializes the FleetMaster object.
+        Initializes the FleetMaster object and loads all mesh data from the database.
 
         Args:
             filename: The path to the HDF5 database file.
-        """
-        self.base_mesh_name = base_mesh_name
 
+        Raises:
+            DatabaseFileNotFoundError: If the HDF5 file does not exist.
+            HDF5AttributeError: If essential attributes are missing from the file.
+            MeshLoadError: If the base mesh cannot be loaded.
+        """
         self.filename = Path(filename)
-        self._loaded_meshes: dict[str, Any] = {}
+        if not self.filename.exists():
+            raise DatabaseFileNotFoundError(path=self.filename)
+
+        self._loaded_meshes: dict[str, EngineMesh] = {}
+        self.base_mesh: EngineMesh | None = None
+        self.base_mesh_name: str | None = None
+        self.candidate_meshes: dict[str, EngineMesh] = {}
+
         self._water_depth: float = -1  # infinite
         self._velocity: float = 0.0
         self._origin: tuple[float, float, float] = (0.0, 0.0, 0.0)
@@ -54,6 +64,8 @@ class FleetMaster:
         self._best_match_name: str | None = None
         self._match_error: float = np.inf
         self._best_match_hydro_data: dict[str, Any] | None = None
+
+        self._load_database_meshes()
 
     def set_waterdepth(self, water_depth: float) -> None:
         """
@@ -233,47 +245,52 @@ class FleetMaster:
         else:
             return hyddb, application_point, velocity, waterdepth
 
-    def load_database_meshes(self, hdf5_path: Path) -> None:
+    def _load_database_meshes(self) -> None:
         """
-        Loads all meshes from the HDF5 database file.
-
-        Args:
-            hdf5_path (Path): Path to the HDF5 database file.
+        Loads all meshes from the HDF5 database file into the instance.
         """
+        logger.debug(f"Loading all meshes from {self.filename}")
 
-        if not hdf5_path.exists():
-            raise DatabaseFileNotFoundError(path=hdf5_path)
-
-        base_mesh_name: str | None = None
-        candidate_mesh_names: list[str] = []
-
-        # 1. Identify base mesh and candidate meshes from the HDF5 file
-        with h5py.File(hdf5_path, "r") as f:
+        with h5py.File(self.filename, "r") as f:
             if "base_mesh" not in f.attrs:
                 raise HDF5AttributeError(attribute_name="base_mesh")
-            base_mesh_name = str(f.attrs["base_mesh"])
+            self.base_mesh_name = str(f.attrs["base_mesh"])
 
             if MESH_GROUP_NAME not in f:
                 logger.warning(f"No '{MESH_GROUP_NAME}' group found in HDF5 file. Cannot find any meshes.")
-                return None, np.inf
+                candidate_mesh_names = []
+            else:
+                mesh_group = f[MESH_GROUP_NAME]
+                if not isinstance(mesh_group, h5py.Group):
+                    logger.warning(f"'{MESH_GROUP_NAME}' in HDF5 file is not a group as expected.")
+                    candidate_mesh_names = []
+                else:
+                    candidate_mesh_names = [str(name) for name in mesh_group if name != self.base_mesh_name]
 
-            mesh_group = f[MESH_GROUP_NAME]
-            if not isinstance(mesh_group, h5py.Group):
-                logger.warning(f"'{MESH_GROUP_NAME}' in HDF5 file is not a group as expected.")
-                return None, np.inf
+        if not self.base_mesh_name:
+            logger.warning("No base mesh found in the database.")
+            # No point in continuing if there is no base mesh
+            return
 
-            # Candidates are all meshes that are not the base mesh
-            candidate_mesh_names = [str(name) for name in mesh_group if name != base_mesh_name]
+        all_meshes_to_load = [self.base_mesh_name]
+        if candidate_mesh_names:
+            all_meshes_to_load.extend(candidate_mesh_names)
+        else:
+            logger.warning("No candidate meshes found to perform a match.")
 
-        if not base_mesh_name or not candidate_mesh_names:
-            logger.warning("No base mesh or candidate meshes found to perform a match.")
-            return None, np.inf
-
-        # 2. Load all required meshes, including their metadata (translation, rotation)
-        all_meshes_to_load = [base_mesh_name, *candidate_mesh_names]
         self._loaded_meshes = {
-            mesh.metadata["name"]: mesh for mesh in load_meshes_from_hdf5(hdf5_path, all_meshes_to_load)
+            mesh.metadata["name"]: mesh for mesh in load_meshes_from_hdf5(self.filename, all_meshes_to_load)
         }
+        self.base_mesh = self._loaded_meshes.get(self.base_mesh_name)
+        self.candidate_meshes = {
+            name: mesh for name, mesh in self._loaded_meshes.items() if name != self.base_mesh_name
+        }
+
+        if not self.base_mesh:
+            # This case should ideally not be hit if HDF5 validation is correct
+            raise MeshLoadError(mesh_name=self.base_mesh_name)
+
+        logger.info(f"Successfully loaded {len(self._loaded_meshes)} meshes from {self.filename}.")
 
     def find_best_matching_mesh(
         self,
@@ -292,29 +309,22 @@ class FleetMaster:
         3.  Return the name of the mesh with the smallest Chamfer distance.
 
         Args:
-            hdf5_path (Path): Path to the HDF5 database file.
             target_translation (list[float]): The target translation [x, y, z] to apply to the base mesh.
             target_rotation (list[float]): The target rotation [roll, pitch, yaw] in degrees.
-            water_level (float): The water level to use for cutting the meshes for comparison. Defaults to 0.0.
 
         Returns:
             A tuple containing the name of the best matching mesh and the corresponding Chamfer distance.
             Returns (None, np.inf) if no match is found.
         """
 
-        base_mesh = self._loaded_meshes.get(self.base_mesh_name)
-        if not base_mesh:
-            raise MeshLoadError(mesh_name=self.base_mesh_name)
-
-        candidate_meshes = {name: mesh for name, mesh in self._loaded_meshes.items() if name != self.base_mesh_name}
+        if not self.base_mesh:
+            raise MeshLoadError(mesh_name=self.base_mesh_name or "unknown")
 
         # 3. Find the distances for all candidates based on the new logic
         all_distances = self._find_best_fit_for_candidates(
-            base_mesh=base_mesh,
-            candidate_meshes=candidate_meshes,
             target_translation=target_translation,
             target_rotation=target_rotation,
-            water_level=0.0,
+            water_level=0.0,  # Assuming water_level is always 0.0 for now, or should be an instance attribute
         )
 
         # 4. Find the minimum distance among the results
@@ -335,7 +345,7 @@ class FleetMaster:
         water_level: float,
     ) -> dict[str, float]:
         """
-        Finds the best fit for a base mesh against a set of candidate meshes.
+        Finds the best fit for the base mesh against a set of candidate meshes.
 
         For each candidate, this function transforms a copy of the base mesh using a hybrid
         transformation derived from the candidate and a target transformation.
@@ -346,8 +356,6 @@ class FleetMaster:
         It then calculates the Chamfer distance between the wetted surfaces.
 
         Args:
-            base_mesh: The base trimesh object.
-            candidate_meshes: A dictionary mapping mesh names to their trimesh objects.
             target_translation: The target global translation [x, y, z].
             target_rotation: The target global rotation [roll, pitch, yaw] in degrees.
             water_level: The water level at which to cut the mesh for a fair comparison.
@@ -357,6 +365,10 @@ class FleetMaster:
         """
         distances = {}
         logger.info(f"Finding best fit for {len(self.candidate_meshes)} candidate meshes...")
+
+        if not self.base_mesh:
+            logger.error("Base mesh is not loaded. Cannot find best fit for candidates.")
+            return {}
 
         for name, candidate_mesh in self.candidate_meshes.items():
             candidate_translation = candidate_mesh.metadata.get("translation")

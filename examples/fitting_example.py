@@ -85,7 +85,6 @@ def run_fitting_example():
         case_number=3,
         fleet=fm,
         description="Different Match with Noise draft 1.0",
-        hdf5_path=hdf5_path,
         target_translation=[2.5, -4.2, -1.1],  # Added dx, dy AND dz
         target_rotation=[23.0, 19.0, 15.0],  # Added yaw AND roll and pitch
         expected_match="boxship_t_1_r_00_00_00",
@@ -108,7 +107,6 @@ def run_fitting_example():
         case_number=5,
         fleet=fm,
         description="Exact Match for draft 2.0 with deviation in xy plane and yaw",
-        hdf5_path=hdf5_path,
         target_translation=[10.0, -20.0, -2],
         target_rotation=[0.0, 0.0, 15.0],
         expected_match="boxship_t_2_r_00_00_00",
@@ -120,7 +118,6 @@ def run_fitting_example():
         case_number=6,
         fleet=fm,
         description="Match for draft 2.0 with noise",
-        hdf5_path=hdf5_path,
         target_translation=[10.0, -20.0, -2.2],
         target_rotation=[4.0, -1.0, 15.0],
         expected_match="boxship_t_2_r_00_00_00",

@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import trimesh.transformations as tf
 
-from fleetmaster.core.fleetmaster import FleetMaster
+from fleetmaster import FleetMaster
 
 # Configure basic logging to see the output from the fitting function
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -24,7 +24,6 @@ def _run_and_print_test_case(
     fm: FleetMaster,
     translation: list[float],
     rotation_deg: list[float],
-    expected_match: str,
     note: str = "",
 ):
     """Runs a single fitting test case and prints the results."""
@@ -90,7 +89,6 @@ def run_fleetmaster_fitting_example():
         fm=fm,
         translation=[0.0, 0.0, -1.0],
         rotation_deg=[20.0, 20.0, 0.0],
-        expected_match="boxship_t_1_r_20_20_00",
     )
 
     # --- Test Case 2: A transformation with irrelevant translations and rotations ---
@@ -100,7 +98,6 @@ def run_fleetmaster_fitting_example():
         fm=fm,
         translation=[2.5, -4.2, -1.1],  # Added dx, dy and dz
         rotation_deg=[20.0, 20.0, 15.0],  # Added yaw
-        expected_match="boxship_t_1_r_20_20_00",
         note="The distance should be very close to the distance in Case 1.",
     )
 
