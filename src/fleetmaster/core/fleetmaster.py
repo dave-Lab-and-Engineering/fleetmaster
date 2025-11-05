@@ -382,7 +382,7 @@ class FleetMaster:
 
                 continue
 
-            hydro_data = {ds_name: group[ds_name][()] for ds_name in group}
+            hydro_data = {ds_name: group[ds_name][()] for ds_name in group if isinstance(group[ds_name], h5py.Dataset)}
 
             if not hydro_data:
                 logger.warning(f"Case group '{group_name}' contains no datasets. Skipping.")
