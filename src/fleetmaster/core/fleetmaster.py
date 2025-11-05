@@ -27,6 +27,8 @@ from .settings import MeshConfig
 
 logger = logging.getLogger(__name__)
 
+type HyddbResult = tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]
+
 
 class FleetMaster:
     """
@@ -66,8 +68,7 @@ class FleetMaster:
         self._match_error: float = np.inf
         self._best_match_hydro_data: dict[str, Any] | None = None
 
-        self._load_database_meshes()
-        self._load_database_cases()
+        self._load_database()
 
     def set_waterdepth(self, water_depth: float) -> None:
         """
@@ -250,9 +251,32 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def get_hyddb1(
-        self,
-    ) -> tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1 | None:
+        """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
+        try:
+            # Ensure all required data is present before creating the object
+            required_keys = [
+                "omega",
+                "added_mass",
+                "damping",
+                "directions",
+                "force_amps",
+                "force_phase_rad",
+            ]
+            if not all(key in hydro_data for key in required_keys):
+                logger.error("Cannot create Hyddb1 object: Hydrodynamic data is missing one or more required keys.")
+                return None
+
+            hyddb = Hyddb1()
+            data_for_hyddb = {key: hydro_data[key] for key in required_keys}
+            hyddb.set_data(**data_for_hyddb)
+        except Exception:
+            logger.exception("Failed to create Hyddb1 object during instantiation or data setting:")
+            return None
+        else:
+            return hyddb
+
+    def get_hyddb1(self) -> HyddbResult:
         """
         Returns the hydrodynamic database (Hyddb1), application point, velocity, and water depth.
 
@@ -264,65 +288,72 @@ class FleetMaster:
             - float: The water depth.
         """
         if not self._best_match_hydro_data:
-            logger.warning("No hydrodynamic data loaded. Run fit() first.")
+            logger.warning("No hydrodynamic data loaded. Run find_best_case() first.")
             return None, None, None, None
 
-        try:
-            hyddb = Hyddb1()
-            hyddb.set_data(
-                omega=self._best_match_hydro_data["omega"],
-                added_mass=self._best_match_hydro_data["added_mass"],
-                damping=self._best_match_hydro_data["damping"],
-                directions=self._best_match_hydro_data["directions"],
-                force_amps=self._best_match_hydro_data["force_amps"],
-                force_phase_rad=self._best_match_hydro_data["force_phase_rad"],
-            )
-
-            application_point = self._origin
-            velocity = self._velocity
-            waterdepth = self._water_depth
-
-        except Exception:
-            logger.exception("Failed to create Hyddb1 object:")
+        hyddb = self._create_hyddb_from_data(self._best_match_hydro_data)
+        if not hyddb:
             return None, None, None, None
-        else:
-            return hyddb, application_point, velocity, waterdepth
 
-    def _load_database_meshes(self) -> None:
+        return hyddb, self._origin, self._velocity, self._water_depth
+
+    def _load_database(self) -> None:
         """
-        Loads all meshes from the HDF5 database file.
+
+        Loads all meshes and case data from the HDF5 database file in a single pass.
+
         """
+
         if not self.filename.exists():
             raise DatabaseFileNotFoundError(path=self.filename)
 
-        base_mesh_name_str: str | None = None
+        logger.info("Loading all meshes and cases from the database...")
+
         with h5py.File(self.filename, "r") as f:
-            if "base_mesh" not in f.attrs:
-                raise HDF5AttributeError(attribute_name="base_mesh")
-            base_mesh_name_str = str(f.attrs["base_mesh"])
+            self._load_meshes_from_file(f)
 
-            if MESH_GROUP_NAME not in f:
-                logger.warning(f"No '{MESH_GROUP_NAME}' group found in HDF5 file. Cannot find any meshes.")
-                return
+            self._load_cases_from_file(f)
 
-            mesh_group = f[MESH_GROUP_NAME]
-            if not isinstance(mesh_group, h5py.Group):
-                logger.warning(f"'{MESH_GROUP_NAME}' in HDF5 file is not a group as expected.")
-                return
+        logger.info(f"Successfully loaded {len(self._loaded_meshes)} meshes and {len(self._loaded_cases)} cases.")
 
-            candidate_mesh_names = [str(name) for name in mesh_group if name != base_mesh_name_str]
+    def _load_meshes_from_file(self, f: h5py.File) -> None:
+        """Loads all meshes from the opened HDF5 file object."""
 
-        if not base_mesh_name_str or not candidate_mesh_names:
-            logger.warning("No base mesh or candidate meshes found to perform a match.")
+        if "base_mesh" not in f.attrs:
+            raise HDF5AttributeError(attribute_name="base_mesh")
+
+        base_mesh_name_str = str(f.attrs["base_mesh"])
+
+        if MESH_GROUP_NAME not in f:
+            logger.warning(f"No '{MESH_GROUP_NAME}' group found in HDF5 file. Cannot find any meshes.")
+
             return
 
+        mesh_group = f[MESH_GROUP_NAME]
+
+        if not isinstance(mesh_group, h5py.Group):
+            logger.warning(f"'{MESH_GROUP_NAME}' in HDF5 file is not a group as expected.")
+
+            return
+
+        # NOTE: load_meshes_from_hdf5 opens the HDF5 file again, which is suboptimal.
+
+        # For a complete single-pass implementation, the logic from that function
+
+        # would need to be integrated here.
+
+        candidate_mesh_names = [str(name) for name in mesh_group if name != base_mesh_name_str]
+
         all_meshes_to_load = [base_mesh_name_str, *candidate_mesh_names]
+
         self._loaded_meshes = {
             mesh.metadata["name"]: mesh for mesh in load_meshes_from_hdf5(self.filename, all_meshes_to_load)
         }
 
         self.base_mesh_name = base_mesh_name_str
+
         self.base_mesh = self._loaded_meshes.get(self.base_mesh_name)
+
         if not self.base_mesh:
             raise MeshLoadError(mesh_name=self.base_mesh_name)
 
@@ -330,37 +361,40 @@ class FleetMaster:
             name: mesh for name, mesh in self._loaded_meshes.items() if name != self.base_mesh_name
         }
 
-    def _load_database_cases(self) -> None:
-        """
-        Loads all case data from the HDF5 database file.
-        """
-        logger.info("Loading all cases from the database...")
+    def _load_cases_from_file(self, f: h5py.File) -> None:
+        """Loads all cases from the opened HDF5 file object."""
+
         loaded_cases = {}
-        with h5py.File(self.filename, "r") as f:
-            for group_name in f:
-                params = self._parse_case_name(group_name)
-                if params:
-                    # This is a case group, let's load its data.
-                    group = f[group_name]
-                    required_datasets = [
-                        "omega",
-                        "added_mass",
-                        "damping",
-                        "directions",
-                        "force_amps",
-                        "force_phase_rad",
-                    ]
-                    if all(ds_name in group for ds_name in required_datasets):
-                        hydro_data = {ds_name: group[ds_name][()] for ds_name in required_datasets}
-                        loaded_cases[group_name] = {
-                            "params": params,
-                            "hydro_data": hydro_data,
-                        }
-                    else:
-                        logger.warning(f"Case group '{group_name}' is missing required datasets. Skipping.")
+
+        for group_name in f:
+            if group_name == MESH_GROUP_NAME:
+                continue  # Skip the mesh group
+
+            if not isinstance(f[group_name], h5py.Group):
+                continue
+
+            group = f[group_name]
+
+            params = self._parse_case_name(group_name)
+
+            if not params:
+                logger.debug(f"Could not parse parameters from group name '{group_name}'. Not a case.")
+
+                continue
+
+            hydro_data = {ds_name: group[ds_name][()] for ds_name in group}
+
+            if not hydro_data:
+                logger.warning(f"Case group '{group_name}' contains no datasets. Skipping.")
+
+                continue
+
+            loaded_cases[group_name] = {
+                "params": params,
+                "hydro_data": hydro_data,
+            }
 
         self._loaded_cases = loaded_cases
-        logger.info(f"Successfully loaded {len(self._loaded_cases)} cases.")
 
     def _collect_candidate_cases(self, mesh_name: str) -> list[dict[str, Any]]:
         """
