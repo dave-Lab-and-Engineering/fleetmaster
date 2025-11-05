@@ -140,16 +140,34 @@ class FleetMaster:
 
     def _load_hydro_data(self, mesh_name: str) -> None:
         """Loads hydrodynamic data for the given mesh name from the HDF5 file."""
-        logger.info(f"Loading hydrodynamic data for mesh '{mesh_name}'...")
+
+        # Helper to format values for the group name, similar to engine.py
+        def _format_value_for_name(value: float) -> str:
+            if value == np.inf:
+                return "inf"
+            if value == int(value):
+                return str(int(value))
+            return f"{value:.1f}"
+
+        # The water level for comparison is hardcoded to 0.0 in _find_best_fit_for_candidates
+        water_level = 0.0
+
+        # Construct the case-specific group name at the top level
+        wd = _format_value_for_name(self._water_depth)
+        wl = _format_value_for_name(water_level)
+        fs = _format_value_for_name(self._velocity)
+        group_path = f"{mesh_name}_wd_{wd}_wl_{wl}_fs_{fs}"
+
+        logger.info(f"Attempting to load hydrodynamic data for mesh '{mesh_name}' from case group '{group_path}'...")
+
         try:
             with h5py.File(self.filename, "r") as f:
-                group_path = f"meshes/{mesh_name}"
-                group = f.get(group_path)
-                if not isinstance(group, h5py.Group):
-                    logger.warning(f"No group '{group_path}' found in HDF5 file or not a group.")
+                if group_path not in f:
+                    logger.error(f"Case group '{group_path}' not found in HDF5 file.")
                     self._best_match_hydro_data = None
                     return
 
+                group = f[group_path]
                 required_datasets = [
                     "omega",
                     "added_mass",
@@ -159,20 +177,21 @@ class FleetMaster:
                     "force_phase_rad",
                 ]
 
-                hydro_data = {}
-                for ds_name in required_datasets:
-                    dataset = group.get(ds_name)
-                    if not isinstance(dataset, h5py.Dataset):
-                        logger.error(f"Dataset '{ds_name}' not found in group '{group_path}' or not a dataset.")
-                        self._best_match_hydro_data = None
-                        return
-                    hydro_data[ds_name] = dataset[()]
+                # Check for presence of all required datasets before loading
+                if not all(ds_name in group for ds_name in required_datasets):
+                    logger.error(
+                        f"One or more required hydrodynamic datasets not found in group '{group_path}'. "
+                        "The HDF5 file might be corrupted or incomplete."
+                    )
+                    self._best_match_hydro_data = None
+                    return
 
+                hydro_data = {ds_name: group[ds_name][()] for ds_name in required_datasets}
                 self._best_match_hydro_data = hydro_data
-                logger.info("Successfully loaded hydrodynamic data.")
+                logger.info(f"Successfully loaded hydrodynamic data from group '{group_path}'.")
 
         except Exception:
-            logger.exception(f"Failed to load hydrodynamic data for mesh '{mesh_name}'")
+            logger.exception(f"Failed to load hydrodynamic data for mesh '{mesh_name}' from group '{group_path}'")
             self._best_match_hydro_data = None
 
     def get_match_error(self) -> float:
