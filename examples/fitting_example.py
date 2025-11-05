@@ -38,7 +38,7 @@ def _run_and_print_test_case(
     )
 
     # Run the fitting process
-    fleet.fit(transform=transform)
+    fleet.fit_mesh(transform=transform)
 
     # Get the results
     best_match = fleet.get_best_match_name()

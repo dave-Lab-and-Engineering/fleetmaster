@@ -39,7 +39,7 @@ def _run_and_print_test_case(
     transform[0:3, 3] = translation
 
     # Run the fit
-    fm.fit(transform=transform)
+    fm.fit_mesh(transform=transform)
 
     # Get the results
     error = fm.get_match_error()

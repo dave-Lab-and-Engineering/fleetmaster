@@ -57,7 +57,7 @@ class FleetMaster:
         self.base_mesh_name: str | None = None
         self.candidate_meshes: dict[str, EngineMesh] = {}
 
-        self._water_depth: float = -1  # infinite
+        self._water_depth: float = np.inf
         self._velocity: float = 0.0
         self._origin: tuple[float, float, float] = (0.0, 0.0, 0.0)
 
@@ -99,7 +99,7 @@ class FleetMaster:
         self._origin = (x, y, z)
         logger.debug(f"Set origin to: {(x, y, z)}")
 
-    def fit(self, transform: Any, origin: tuple[float, float, float] | None = None) -> None:
+    def fit_mesh(self, transform: Any, origin: tuple[float, float, float] | None = None) -> None:
         """
         Runs a query on the Fleetmaster database to select the best matching dataset.
 
