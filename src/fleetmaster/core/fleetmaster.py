@@ -254,21 +254,30 @@ class FleetMaster:
     def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
         try:
-            # Ensure all required data is present before creating the object
-            required_keys = [
-                "omega",
-                "added_mass",
-                "damping",
-                "directions",
-                "force_amps",
-                "force_phase_rad",
-            ]
-            if not all(key in hydro_data for key in required_keys):
+            # This maps the names from the Capytaine dataset to the names Hyddb1 expects.
+            capytaine_to_hyddb_map = {
+                "wave_frequency": "omega",
+                "added_mass": "added_mass",
+                "radiation_damping": "damping",
+                "wave_direction": "directions",
+                "diffraction_force": "force_amps",
+                "diffraction_phase": "force_phase_rad",
+            }
+
+            # Check if all necessary Capytaine keys are present in the loaded data.
+            required_capytaine_keys = list(capytaine_to_hyddb_map.keys())
+            if not all(key in hydro_data for key in required_capytaine_keys):
                 logger.error("Cannot create Hyddb1 object: Hydrodynamic data is missing one or more required keys.")
+                missing_keys = [key for key in required_capytaine_keys if key not in hydro_data]
+                logger.error(f"Missing keys: {missing_keys}")
                 return None
 
+            # Create a new dictionary with the keys renamed for Hyddb1.
+            data_for_hyddb = {
+                hyddb_key: hydro_data[capytaine_key] for capytaine_key, hyddb_key in capytaine_to_hyddb_map.items()
+            }
+
             hyddb = Hyddb1()
-            data_for_hyddb = {key: hydro_data[key] for key in required_keys}
             hyddb.set_data(**data_for_hyddb)
         except Exception:
             logger.exception("Failed to create Hyddb1 object during instantiation or data setting:")

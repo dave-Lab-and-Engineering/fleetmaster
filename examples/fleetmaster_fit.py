@@ -41,6 +41,11 @@ def _run_and_print_test_case(
     # Run the fit
     fm.fit_mesh(transform=transform)
 
+    # After finding the best mesh, find the corresponding case
+    # We use the default parameters that were used to generate the database
+    logger.info("Finding best case for speed=0.0, depth=inf, level=0.0...")
+    fm.find_best_case(forward_speed=0.0, water_depth=np.inf, water_level=0.0)
+
     # Get the results
     error = fm.get_match_error()
     hyddb, _origin, _velocity, _waterdepth = fm.get_hyddb1()
