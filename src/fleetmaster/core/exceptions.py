@@ -60,3 +60,11 @@ class DatabaseFileNotFoundError(FileNotFoundError):
     def __init__(self, path: Path) -> None:
         message = f"HDF5 database not found at path: {path}"
         super().__init__(message)
+
+
+class BaseMeshIsNoneError(ValueError):
+    """Raised when the base mesh is None."""
+
+    def __init__(self, base_mesh_name: str) -> None:
+        message = "base_mesh {base_mesh_name} cannot be None when finding best fit."
+        super().__init__(message)

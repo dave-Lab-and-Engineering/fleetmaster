@@ -21,7 +21,7 @@ from .engine import (
     _prepare_capytaine_body,
     load_meshes_from_hdf5,
 )
-from .exceptions import DatabaseFileNotFoundError, HDF5AttributeError, MeshLoadError
+from .exceptions import BaseMeshIsNoneError, DatabaseFileNotFoundError, HDF5AttributeError, MeshLoadError
 from .fitting import _calculate_chamfer_distance
 from .settings import MeshConfig
 
@@ -316,7 +316,7 @@ class FleetMaster:
 
         logger.info(f"Successfully loaded {len(self._loaded_meshes)} meshes and {len(self._loaded_cases)} cases.")
 
-    def _load_meshes_from_file(self, f: h5py.File) -> None:
+    def _load_meshes_from_file(self, f: Any) -> None:
         """Loads all meshes from the opened HDF5 file object."""
 
         if "base_mesh" not in f.attrs:
@@ -364,7 +364,7 @@ class FleetMaster:
             name: mesh for name, mesh in self._loaded_meshes.items() if name != self.base_mesh_name
         }
 
-    def _load_cases_from_file(self, f: h5py.File) -> None:
+    def _load_cases_from_file(self, f: Any) -> None:
         """Loads all cases from the opened HDF5 file object."""
 
         loaded_cases = {}
@@ -579,12 +579,14 @@ class FleetMaster:
         Returns:
             A dictionary mapping each candidate mesh name to its calculated Chamfer distance.
         """
+        if self.base_mesh is None:
+            raise BaseMeshIsNoneError(base_mesh_name=str(self.base_mesh_name))
         distances = {}
         logger.info(f"Finding best fit for {len(self.candidate_meshes)} candidate meshes...")
 
         for name, candidate_mesh in self.candidate_meshes.items():
-            candidate_translation = candidate_mesh.metadata.get("translation")
-            candidate_rotation = candidate_mesh.metadata.get("rotation")
+            candidate_translation = candidate_mesh.mesh.metadata.get("translation")
+            candidate_rotation = candidate_mesh.mesh.metadata.get("rotation")
 
             if candidate_translation is None or candidate_rotation is None:
                 logger.warning(f"Candidate '{name}' is missing translation/rotation metadata. Skipping.")
@@ -617,7 +619,7 @@ class FleetMaster:
 
             temp_base_mesh = self.base_mesh.copy()
             transformed_base_mesh = _apply_mesh_translation_and_rotation(
-                mesh=temp_base_mesh,
+                mesh=temp_base_mesh.mesh,
                 translation_vector=new_translation,
                 rotation_vector_deg=new_rotation,
             )
@@ -641,7 +643,7 @@ class FleetMaster:
                 continue
 
             # The candidate mesh from the database is already the wetted surface.
-            distance = _calculate_chamfer_distance(cut_transformed_base_mesh, candidate_mesh)
+            distance = _calculate_chamfer_distance(cut_transformed_base_mesh, candidate_mesh.mesh)
             logger.debug(f"  - Calculated distance to '{name}': {distance:.4f}")
             distances[name] = distance
 
