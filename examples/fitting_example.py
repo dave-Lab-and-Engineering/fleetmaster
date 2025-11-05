@@ -8,7 +8,7 @@ fit for a given transformation from a pre-existing HDF5 database.
 import logging
 from pathlib import Path
 
-from fleetmaster.core.fitting import find_best_matching_mesh
+from fleetmaster import FleetMaster
 
 # Configure basic logging to see the output from the fitting function
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -16,12 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 def _run_and_print_test_case(
+    fleet: FleetMaster,
     case_number: int,
     description: str,
-    hdf5_path: Path,
     target_translation: list[float],
     target_rotation: list[float],
-    water_level: float,
     expected_match: str,
     note: str = "",
 ):
@@ -29,11 +28,9 @@ def _run_and_print_test_case(
     print(f"\n\n--- Running Test Case {case_number}: {description} ---")
     logger.info(f"Searching for best match for translation={target_translation}, rotation={target_rotation}...\n")
 
-    best_match, distance = find_best_matching_mesh(
-        hdf5_path=hdf5_path,
+    best_match, distance = fleet.find_best_matching_mesh(
         target_translation=target_translation,
         target_rotation=target_rotation,
-        water_level=water_level,
     )
 
     print(f"\n--- Result for Test Case {case_number} ---")
@@ -60,29 +57,25 @@ def run_fitting_example():
         logger.error("Please run 'fleetmaster -v run --settings-file examples/settings_rotations.yml' first.")
         return
 
-    # The water level used for the comparison. This should match the level at which
-    # the meshes in the database were generated (wetted surface).
-    water_level = 0.0
+    fm = FleetMaster(filename=hdf5_path)
 
     # --- Test Case 1: A transformation that should perfectly match an existing mesh ---
     _run_and_print_test_case(
         case_number=1,
+        fleet=fm,
         description="Exact Match Draft 1 meter",
-        hdf5_path=hdf5_path,
         target_translation=[0.0, 0.0, -1.0],
         target_rotation=[20.0, 20.0, 0.0],
-        water_level=water_level,
         expected_match="boxship_t_1_r_20_20_00",
     )
 
     # --- Test Case 2: A transformation with irrelevant translations and rotations ---
     _run_and_print_test_case(
         case_number=2,
+        fleet=fm,
         description="Match with Noise draft 1.0",
-        hdf5_path=hdf5_path,
         target_translation=[2.5, -4.2, -1.1],  # Added dx, dy and dz
         target_rotation=[20.0, 20.0, 15.0],  # Added yaw
-        water_level=water_level,
         expected_match="boxship_t_1_r_20_20_00",
         note="The distance should be very close to the distance in Case 1.",
     )
@@ -90,11 +83,11 @@ def run_fitting_example():
     # --- Test Case 2: A transformation with irrelevant translations and rotations ---
     _run_and_print_test_case(
         case_number=3,
+        fleet=fm,
         description="Different Match with Noise draft 1.0",
         hdf5_path=hdf5_path,
         target_translation=[2.5, -4.2, -1.1],  # Added dx, dy AND dz
         target_rotation=[23.0, 19.0, 15.0],  # Added yaw AND roll and pitch
-        water_level=water_level,
         expected_match="boxship_t_1_r_00_00_00",
         note="The distance should be larger than both case 1 and case 2.",
     )
@@ -102,11 +95,10 @@ def run_fitting_example():
     # --- Test Case 4: A transformation with different core properties ---
     _run_and_print_test_case(
         case_number=4,
+        fleet=fm,
         description="Exact Match for draft 2.0",
-        hdf5_path=hdf5_path,
         target_translation=[0.0, -0.0, -2],
         target_rotation=[0.0, 0.0, 0.0],
-        water_level=water_level,
         expected_match="boxship_t_2_r_00_00_00",
         note="The distance should be zero.",
     )
@@ -114,11 +106,11 @@ def run_fitting_example():
     # --- Test Case 5: A transformation with different core properties ---
     _run_and_print_test_case(
         case_number=5,
+        fleet=fm,
         description="Exact Match for draft 2.0 with deviation in xy plane and yaw",
         hdf5_path=hdf5_path,
         target_translation=[10.0, -20.0, -2],
         target_rotation=[0.0, 0.0, 15.0],
-        water_level=water_level,
         expected_match="boxship_t_2_r_00_00_00",
         note="The distance should be zero.",
     )
@@ -126,11 +118,11 @@ def run_fitting_example():
     # --- Test Case 6: A transformation with different core properties ---
     _run_and_print_test_case(
         case_number=6,
+        fleet=fm,
         description="Match for draft 2.0 with noise",
         hdf5_path=hdf5_path,
         target_translation=[10.0, -20.0, -2.2],
         target_rotation=[4.0, -1.0, 15.0],
-        water_level=water_level,
         expected_match="boxship_t_2_r_00_00_00",
         note="The distance should be larger than zero.",
     )
