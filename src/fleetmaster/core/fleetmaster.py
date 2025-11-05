@@ -316,7 +316,7 @@ class FleetMaster:
 
         logger.info(f"Successfully loaded {len(self._loaded_meshes)} meshes and {len(self._loaded_cases)} cases.")
 
-    def _load_meshes_from_file(self, f: Any) -> None:
+    def _load_meshes_from_file(self, f: h5py.File) -> None:
         """Loads all meshes from the opened HDF5 file object."""
 
         if "base_mesh" not in f.attrs:
