@@ -382,7 +382,19 @@ class FleetMaster:
 
                 continue
 
-            hydro_data = {ds_name: group[ds_name][()] for ds_name in group if isinstance(group[ds_name], h5py.Dataset)}
+            # Collect only actual datasets to avoid trying to index Datatype objects.
+            hydro_data = {}
+            # Iterate over dataset names (keys) and access objects by key to keep static analyzers happy.
+            for ds_name in group:
+                obj = group.get(ds_name)
+                if isinstance(obj, h5py.Dataset):
+                    try:
+                        hydro_data[ds_name] = obj[()]
+                    except Exception:
+                        logger.exception(
+                            f"Failed to read dataset '{ds_name}' in group '{group_name}'; skipping dataset."
+                        )
+                        continue
 
             if not hydro_data:
                 logger.warning(f"Case group '{group_name}' contains no datasets. Skipping.")
