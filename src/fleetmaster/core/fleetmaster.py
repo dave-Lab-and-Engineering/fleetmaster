@@ -56,6 +56,7 @@ class FleetMaster:
         self.base_mesh: EngineMesh | None = None
         self.base_mesh_name: str | None = None
         self.candidate_meshes: dict[str, EngineMesh] = {}
+        self._loaded_cases: dict[str, Any] = {}
 
         self._water_depth: float = np.inf
         self._velocity: float = 0.0
@@ -66,6 +67,7 @@ class FleetMaster:
         self._best_match_hydro_data: dict[str, Any] | None = None
 
         self._load_database_meshes()
+        self._load_database_cases()
 
     def set_waterdepth(self, water_depth: float) -> None:
         """
@@ -195,42 +197,17 @@ class FleetMaster:
             logger.warning("Could not find a suitable case.")
 
     def _load_hydro_data(self, case_group_name: str) -> None:
-        """Loads hydrodynamic data for the given case group name from the HDF5 file."""
-        logger.info(f"Attempting to load hydrodynamic data from case group '{case_group_name}'...")
+        """Loads hydrodynamic data for the given case group name from the pre-loaded cases."""
+        logger.info(f"Retrieving hydrodynamic data for case group '{case_group_name}'...")
 
-        try:
-            with h5py.File(self.filename, "r") as f:
-                if case_group_name not in f:
-                    logger.error(f"Case group '{case_group_name}' not found in HDF5 file.")
-                    self._best_match_hydro_data = None
-                    return
+        case_data = self._loaded_cases.get(case_group_name)
 
-                group = f[case_group_name]
-                required_datasets = [
-                    "omega",
-                    "added_mass",
-                    "damping",
-                    "directions",
-                    "force_amps",
-                    "force_phase_rad",
-                ]
-
-                # Check for presence of all required datasets before loading
-                if not all(ds_name in group for ds_name in required_datasets):
-                    logger.error(
-                        f"One or more required hydrodynamic datasets not found in group '{case_group_name}'. "
-                        "The HDF5 file might be corrupted or incomplete."
-                    )
-                    self._best_match_hydro_data = None
-                    return
-
-                hydro_data = {ds_name: group[ds_name][()] for ds_name in required_datasets}
-                self._best_match_hydro_data = hydro_data
-                logger.info(f"Successfully loaded hydrodynamic data from group '{case_group_name}'.")
-
-        except Exception:
-            logger.exception(f"Failed to load hydrodynamic data from group '{case_group_name}'")
+        if case_data:
+            self._best_match_hydro_data = case_data["hydro_data"]
+            logger.info(f"Successfully retrieved hydrodynamic data for case '{case_group_name}'.")
+        else:
             self._best_match_hydro_data = None
+            logger.error(f"Case group '{case_group_name}' not found in pre-loaded cases.")
 
     def get_match_error(self) -> float:
         """
@@ -353,20 +330,46 @@ class FleetMaster:
             name: mesh for name, mesh in self._loaded_meshes.items() if name != self.base_mesh_name
         }
 
-    def _collect_candidate_cases(self, mesh_name: str) -> list[dict[str, Any]]:
+    def _load_database_cases(self) -> None:
         """
-        Collects all cases associated with a given mesh name from the HDF5 file.
+        Loads all case data from the HDF5 database file.
         """
-        cases = []
+        logger.info("Loading all cases from the database...")
+        loaded_cases = {}
         with h5py.File(self.filename, "r") as f:
             for group_name in f:
-                if group_name.startswith(mesh_name):
-                    try:
-                        params = self._parse_case_name(group_name)
-                        if params:
-                            cases.append({"name": group_name, "params": params})
-                    except ValueError as e:
-                        logger.warning(f"Could not parse case name '{group_name}': {e}")
+                params = self._parse_case_name(group_name)
+                if params:
+                    # This is a case group, let's load its data.
+                    group = f[group_name]
+                    required_datasets = [
+                        "omega",
+                        "added_mass",
+                        "damping",
+                        "directions",
+                        "force_amps",
+                        "force_phase_rad",
+                    ]
+                    if all(ds_name in group for ds_name in required_datasets):
+                        hydro_data = {ds_name: group[ds_name][()] for ds_name in required_datasets}
+                        loaded_cases[group_name] = {
+                            "params": params,
+                            "hydro_data": hydro_data,
+                        }
+                    else:
+                        logger.warning(f"Case group '{group_name}' is missing required datasets. Skipping.")
+
+        self._loaded_cases = loaded_cases
+        logger.info(f"Successfully loaded {len(self._loaded_cases)} cases.")
+
+    def _collect_candidate_cases(self, mesh_name: str) -> list[dict[str, Any]]:
+        """
+        Collects all cases associated with a given mesh name from the pre-loaded cases.
+        """
+        cases = []
+        for case_name, case_data in self._loaded_cases.items():
+            if case_name.startswith(mesh_name):
+                cases.append({"name": case_name, "params": case_data["params"]})
         return cases
 
     def _parse_case_name(self, group_name: str) -> dict[str, float] | None:
@@ -406,26 +409,41 @@ class FleetMaster:
         if not candidate_cases:
             return None
 
-        # First, look for an exact match.
-        for case in candidate_cases:
-            params = case["params"]
-            if (
-                params["forward_speed"] == target_speed
-                and params["water_depth"] == target_depth
-                and params["water_level"] == target_level
-            ):
-                case["exact_match"] = True
-                return case
+        def transform_depth(d: float) -> float:
+            """Transforms depth to handle infinity gracefully."""
+            if np.isinf(d):
+                return 0.0
+            return 1.0 / (1.0 + d)
 
-        # If no exact match, find the closest one using Euclidean distance.
+        # First, mark all cases as not exact matches.
+        for this_case in candidate_cases:
+            this_case["exact_match"] = True
+
+        # First, look for a practically equivalent match.
+        for this_case in candidate_cases:
+            params = this_case["params"]
+            if (
+                np.isclose(params["forward_speed"], target_speed)
+                and np.isclose(transform_depth(params["water_depth"]), transform_depth(target_depth))
+                and np.isclose(params["water_level"], target_level)
+            ):
+                this_case["exact_match"] = True
+                return this_case
+
+        # If no exact match, find the closest one using a custom distance metric.
         distances = []
-        for case in candidate_cases:
-            params = case["params"]
-            dist = (
-                (params["forward_speed"] - target_speed) ** 2
-                + (params["water_depth"] - target_depth) ** 2
-                + (params["water_level"] - target_level) ** 2
-            )
+        for this_case in candidate_cases:
+            params = this_case["params"]
+
+            # Standard Euclidean distance for speed and level
+            d_speed = (params["forward_speed"] - target_speed) ** 2
+            d_level = (params["water_level"] - target_level) ** 2
+
+            # Transformed distance for water depth, handling infinity which is now close to .e.g.
+            # a depth of 1000 meters.
+            d_depth = (transform_depth(params["water_depth"]) - transform_depth(target_depth)) ** 2
+
+            dist = d_speed + d_depth + d_level
             distances.append(dist)
 
         if not distances:
