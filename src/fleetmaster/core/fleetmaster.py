@@ -134,40 +134,78 @@ class FleetMaster:
 
         if best_match:
             logger.info(f"Fitting complete. Best match: '{best_match}' with error: {min_distance:.4f}")
-            self._load_hydro_data(best_match)
         else:
             logger.warning("Fitting complete, but no suitable match was found.")
 
-    def _load_hydro_data(self, mesh_name: str) -> None:
-        """Loads hydrodynamic data for the given mesh name from the HDF5 file."""
+    def find_best_case(
+        self,
+        forward_speed: float,
+        water_depth: float,
+        water_level: float,
+    ) -> None:
+        """
+        Selects the best matching case from the database based on forward speed,
+        water depth, and water level, for the best mesh found by fit_mesh.
 
-        # Helper to format values for the group name, similar to engine.py
-        def _format_value_for_name(value: float) -> str:
-            if value == np.inf:
-                return "inf"
-            if value == int(value):
-                return str(int(value))
-            return f"{value:.1f}"
+        After finding the best case, it loads the corresponding hydrodynamic data.
 
-        # The water level for comparison is hardcoded to 0.0 in _find_best_fit_for_candidates
-        water_level = 0.0
+        Args:
+            forward_speed: The target forward speed in m/s.
+            water_depth: The target water depth in meters.
+            water_level: The target water level in meters.
+        """
+        if not self._best_match_name:
+            logger.warning("Cannot select best case. Run fit_mesh() first.")
+            return
 
-        # Construct the case-specific group name at the top level
-        wd = _format_value_for_name(self._water_depth)
-        wl = _format_value_for_name(water_level)
-        fs = _format_value_for_name(self._velocity)
-        group_path = f"{mesh_name}_wd_{wd}_wl_{wl}_fs_{fs}"
+        logger.info(
+            "Selecting best case for mesh '%s' with parameters: forward_speed=%f, water_depth=%f, water_level=%f",
+            self._best_match_name,
+            forward_speed,
+            water_depth,
+            water_level,
+        )
 
-        logger.info(f"Attempting to load hydrodynamic data for mesh '{mesh_name}' from case group '{group_path}'...")
+        candidate_cases = self._collect_candidate_cases(self._best_match_name)
+
+        if not candidate_cases:
+            logger.warning(f"No cases found for mesh '{self._best_match_name}'.")
+            return
+
+        best_case = self._find_best_matching_case(candidate_cases, forward_speed, water_depth, water_level)
+
+        if best_case:
+            logger.info(f"Best matching case found: {best_case['name']}")
+            if not best_case["exact_match"]:
+                params = best_case["params"]
+                logger.warning(
+                    "No exact match found for the given parameters. "
+                    "Selected the closest case with parameters: "
+                    "forward_speed=%f, water_depth=%f, water_level=%f",
+                    params["forward_speed"],
+                    params["water_depth"],
+                    params["water_level"],
+                )
+
+            self._load_hydro_data(best_case["name"])
+            self.set_velocity(best_case["params"]["forward_speed"])
+            self.set_waterdepth(best_case["params"]["water_depth"])
+
+        else:
+            logger.warning("Could not find a suitable case.")
+
+    def _load_hydro_data(self, case_group_name: str) -> None:
+        """Loads hydrodynamic data for the given case group name from the HDF5 file."""
+        logger.info(f"Attempting to load hydrodynamic data from case group '{case_group_name}'...")
 
         try:
             with h5py.File(self.filename, "r") as f:
-                if group_path not in f:
-                    logger.error(f"Case group '{group_path}' not found in HDF5 file.")
+                if case_group_name not in f:
+                    logger.error(f"Case group '{case_group_name}' not found in HDF5 file.")
                     self._best_match_hydro_data = None
                     return
 
-                group = f[group_path]
+                group = f[case_group_name]
                 required_datasets = [
                     "omega",
                     "added_mass",
@@ -180,7 +218,7 @@ class FleetMaster:
                 # Check for presence of all required datasets before loading
                 if not all(ds_name in group for ds_name in required_datasets):
                     logger.error(
-                        f"One or more required hydrodynamic datasets not found in group '{group_path}'. "
+                        f"One or more required hydrodynamic datasets not found in group '{case_group_name}'. "
                         "The HDF5 file might be corrupted or incomplete."
                     )
                     self._best_match_hydro_data = None
@@ -188,10 +226,10 @@ class FleetMaster:
 
                 hydro_data = {ds_name: group[ds_name][()] for ds_name in required_datasets}
                 self._best_match_hydro_data = hydro_data
-                logger.info(f"Successfully loaded hydrodynamic data from group '{group_path}'.")
+                logger.info(f"Successfully loaded hydrodynamic data from group '{case_group_name}'.")
 
         except Exception:
-            logger.exception(f"Failed to load hydrodynamic data for mesh '{mesh_name}' from group '{group_path}'")
+            logger.exception(f"Failed to load hydrodynamic data from group '{case_group_name}'")
             self._best_match_hydro_data = None
 
     def get_match_error(self) -> float:
@@ -314,6 +352,89 @@ class FleetMaster:
         self.candidate_meshes = {
             name: mesh for name, mesh in self._loaded_meshes.items() if name != self.base_mesh_name
         }
+
+    def _collect_candidate_cases(self, mesh_name: str) -> list[dict[str, Any]]:
+        """
+        Collects all cases associated with a given mesh name from the HDF5 file.
+        """
+        cases = []
+        with h5py.File(self.filename, "r") as f:
+            for group_name in f:
+                if group_name.startswith(mesh_name):
+                    try:
+                        params = self._parse_case_name(group_name)
+                        if params:
+                            cases.append({"name": group_name, "params": params})
+                    except ValueError as e:
+                        logger.warning(f"Could not parse case name '{group_name}': {e}")
+        return cases
+
+    def _parse_case_name(self, group_name: str) -> dict[str, float] | None:
+        """
+        Parses a case name like '{mesh_name}_wd_{wd}_wl_{wl}_fs_{fs}'
+        and returns a dictionary with the parameters.
+        """
+        parts = group_name.split("_")
+        # A valid name should look like '..._wd_X_wl_Y_fs_Z'
+        if len(parts) < 6 or parts[-6] != "wd" or parts[-4] != "wl" or parts[-2] != "fs":
+            return None
+
+        def parse_val(s: str) -> float:
+            return np.inf if s == "inf" else float(s)
+
+        try:
+            return {
+                "water_depth": parse_val(parts[-5]),
+                "water_level": parse_val(parts[-3]),
+                "forward_speed": parse_val(parts[-1]),
+            }
+        except (ValueError, IndexError):
+            return None
+
+    def _find_best_matching_case(
+        self,
+        candidate_cases: list[dict[str, Any]],
+        target_speed: float,
+        target_depth: float,
+        target_level: float,
+    ) -> dict[str, Any] | None:
+        """
+        Finds the best matching case from a list of candidates.
+        An exact match is returned if found. Otherwise, the case with the smallest
+        Euclidean distance in the parameter space is returned.
+        """
+        if not candidate_cases:
+            return None
+
+        # First, look for an exact match.
+        for case in candidate_cases:
+            params = case["params"]
+            if (
+                params["forward_speed"] == target_speed
+                and params["water_depth"] == target_depth
+                and params["water_level"] == target_level
+            ):
+                case["exact_match"] = True
+                return case
+
+        # If no exact match, find the closest one using Euclidean distance.
+        distances = []
+        for case in candidate_cases:
+            params = case["params"]
+            dist = (
+                (params["forward_speed"] - target_speed) ** 2
+                + (params["water_depth"] - target_depth) ** 2
+                + (params["water_level"] - target_level) ** 2
+            )
+            distances.append(dist)
+
+        if not distances:
+            return None
+
+        min_dist_idx = np.argmin(distances)
+        best_case = candidate_cases[min_dist_idx]
+        best_case["exact_match"] = False
+        return best_case
 
     def _find_best_matching_mesh(
         self,
