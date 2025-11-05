@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import logging
 import tempfile
@@ -27,6 +29,14 @@ class EngineMesh:
     name: str
     mesh: trimesh.Trimesh
     config: MeshConfig
+
+    def copy(self) -> EngineMesh:
+        """Creates a deep copy of the EngineMesh instance."""
+        return EngineMesh(
+            name=self.name,
+            mesh=self.mesh.copy(),
+            config=self.config.copy(deep=True),
+        )
 
 
 def make_database(

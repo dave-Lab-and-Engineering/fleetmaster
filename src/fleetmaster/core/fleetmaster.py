@@ -251,7 +251,7 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1 | None:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
         try:
             # Ensure all required data is present before creating the object
@@ -316,7 +316,7 @@ class FleetMaster:
 
         logger.info(f"Successfully loaded {len(self._loaded_meshes)} meshes and {len(self._loaded_cases)} cases.")
 
-    def _load_meshes_from_file(self, f: h5py.File) -> None:
+    def _load_meshes_from_file(self, f: Any) -> None:
         """Loads all meshes from the opened HDF5 file object."""
 
         if "base_mesh" not in f.attrs:
@@ -347,7 +347,10 @@ class FleetMaster:
         all_meshes_to_load = [base_mesh_name_str, *candidate_mesh_names]
 
         self._loaded_meshes = {
-            mesh.metadata["name"]: mesh for mesh in load_meshes_from_hdf5(self.filename, all_meshes_to_load)
+            mesh.metadata["name"]: EngineMesh(
+                name=mesh.metadata["name"], mesh=mesh, config=MeshConfig(file="from_hdf5")
+            )
+            for mesh in load_meshes_from_hdf5(self.filename, all_meshes_to_load)
         }
 
         self.base_mesh_name = base_mesh_name_str
