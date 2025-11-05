@@ -270,6 +270,7 @@ class FleetMaster:
                 logger.error("Cannot create Hyddb1 object: Hydrodynamic data is missing one or more required keys.")
                 missing_keys = [key for key in required_capytaine_keys if key not in hydro_data]
                 logger.error(f"Missing keys: {missing_keys}")
+                logger.error(f"Available keys: {list(hydro_data.keys())}")
                 return None
 
             # Create a new dictionary with the keys renamed for Hyddb1.
