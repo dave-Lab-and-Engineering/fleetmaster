@@ -17,6 +17,8 @@ from fleetmaster import FleetMaster
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
+HERE = Path(__file__).parent.resolve()
+
 
 def _run_and_print_test_case(
     case_number: int,
@@ -57,8 +59,8 @@ def _run_and_print_test_case(
             print(f"   - Successfully retrieved Hyddb1 object with {hyddb.n_frequencies} frequencies.")
             # Demonstrate saving the hyddb1 object
             try:
-                hyd_filename = f"case_{case_number}.hyd"
-                hyddb.to_hyd_file(hyd_filename)
+                hyd_filename = HERE / f"case_{case_number}.hyd"
+                hyddb.to_hyd_file(str(hyd_filename))
                 print(f"   - Saved Hyddb1 object to '{hyd_filename}'")
             except Exception as e:
                 print(f"   - Failed to save Hyddb1 object: {e}")
