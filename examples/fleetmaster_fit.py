@@ -50,11 +50,12 @@ def _run_and_print_test_case(
 
     # Get the results
     error = fm.get_match_error()
+    best_mesh_name = fm._best_match_name
     hyddb, _origin, _velocity, _waterdepth = fm.get_hyddb1()
 
     print(f"\n--- Result for Test Case {case_number} ---")
     if error != np.inf:
-        print(f"✅ Best match found with error: {error:.6f}")
+        print(f"✅ Best match for {best_mesh_name} found with error: {error:.6f}")
         if hyddb:
             print(f"   - Successfully retrieved Hyddb1 object with {hyddb.n_frequencies} frequencies.")
             # Demonstrate saving the hyddb1 object
@@ -89,23 +90,31 @@ def run_fleetmaster_fitting_example():
     fm.set_waterdepth(0.0)  # Corresponds to water_level in the original example
     fm.set_velocity(0.0)  # Assuming 0 velocity for these cases
 
-    # --- Test Case 1: A transformation that should perfectly match an existing mesh ---
+    # --- Test Case 1: Just move down
     _run_and_print_test_case(
         case_number=1,
         description="Exact Match Draft 1 meter",
         fm=fm,
         translation=[0.0, 0.0, -1.0],
-        rotation_deg=[20.0, 20.0, 0.0],
+        rotation_deg=[0.0, 0.0, 0.0],
+    )
+
+    # --- Test Case 1: A transformation that should perfectly match an existing mesh ---
+    _run_and_print_test_case(
+        case_number=2,
+        description="Exact Match Draft 1 meter",
+        fm=fm,
+        translation=[0.0, 0.0, -2.0],
+        rotation_deg=[0.0, 0.0, 0.0],
     )
 
     # --- Test Case 2: A transformation with irrelevant translations and rotations ---
     _run_and_print_test_case(
-        case_number=2,
-        description="Match with Noise draft 1.0",
+        case_number=3,
+        description="Move down 1.0 and rotate 20 deg pitch, 20 deg roll, 15 deg yaw",
         fm=fm,
-        translation=[2.5, -4.2, -1.1],  # Added dx, dy and dz
+        translation=[2.5, -4.2, -1.0],  # Added dx, dy and dz
         rotation_deg=[20.0, 20.0, 15.0],  # Added yaw
-        note="The distance should be very close to the distance in Case 1.",
     )
 
 
