@@ -50,5 +50,5 @@ stl_files:
     # this puts the cog in the centre at the water level
     cog: [0.0, 0.0, 0.0]
 
-wave_periods: [8.0, 10.0, 12.0]
-wave_directions: [0, 45, 90, 135, 180]
+wave_periods: 0.5:20.1:0.5
+wave_directions: 0:180:22.5

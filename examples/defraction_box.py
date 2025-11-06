@@ -61,7 +61,7 @@ def main(
 
     # create the buoy mesh with the stern at x = 0
     box_buoy = Box(0, BOX_LENGTH, -half_width, half_width, 0, BOX_HEIGHT)
-    print(f"Saving buoy mesh {box_buoy_filename}")
+    print(f"Saving buoy esh {box_buoy_filename}")
     box_buoy.save(str(box_buoy_filename))
 
     # create the base mesh for the wave interaction with x = 0 in the centre

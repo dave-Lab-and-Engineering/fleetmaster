@@ -147,3 +147,5 @@ cython_debug/
 *.hdf5
 *.stl
 *.hyd
+*.dhyd
+/examples/*.png
