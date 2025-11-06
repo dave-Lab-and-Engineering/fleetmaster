@@ -197,18 +197,18 @@ class FleetMaster:
         else:
             logger.warning("Could not find a suitable case.")
 
-    def _load_hydro_data(self, case_group_name: str) -> None:
+    def _load_hydro_data(self, case_name: str) -> None:
         """Loads hydrodynamic data for the given case group name from the pre-loaded cases."""
-        logger.info(f"Retrieving hydrodynamic data for case group '{case_group_name}'...")
+        logger.info(f"Retrieving hydrodynamic data for case group '{case_name}'...")
 
-        case_data = self._loaded_cases.get(case_group_name)
+        case_data = self._loaded_cases.get(case_name)
 
         if case_data:
             self._best_match_hydro_data = case_data["hydro_data"]
-            logger.info(f"Successfully retrieved hydrodynamic data for case '{case_group_name}'.")
+            logger.info(f"Successfully retrieved hydrodynamic data for case '{case_name}'.")
         else:
             self._best_match_hydro_data = None
-            logger.error(f"Case group '{case_group_name}' not found in pre-loaded cases.")
+            logger.error(f"Case group '{case_name}' not found in pre-loaded cases.")
 
     def get_match_error(self) -> float:
         """
@@ -256,12 +256,12 @@ class FleetMaster:
         try:
             # This maps the names from the Capytaine dataset to the names Hyddb1 expects.
             capytaine_to_hyddb_map = {
-                "wave_frequency": "omega",
+                "omega": "omega",
                 "added_mass": "added_mass",
                 "radiation_damping": "damping",
                 "wave_direction": "directions",
-                "diffraction_force": "force_amps",
-                "diffraction_phase": "force_phase_rad",
+                "force_amps": "force_amps",
+                "force_phase_rad": "force_phase_rad",
             }
 
             # Check if all necessary Capytaine keys are present in the loaded data.
@@ -414,6 +414,12 @@ class FleetMaster:
 
                 continue
 
+            if (diffraction_force := hydro_data.get("diffraction_force")) is not None:
+                hydro_data["force_amps"] = np.abs(diffraction_force)
+                hydro_data["force_phase_rad"] = np.angle(diffraction_force)
+            else:
+                logger.warning(f"Case group '{group_name}' is missing diffraction force data.")
+
             loaded_cases[group_name] = {
                 "params": params,
                 "hydro_data": hydro_data,
@@ -427,7 +433,8 @@ class FleetMaster:
         """
         cases = []
         for case_name, case_data in self._loaded_cases.items():
-            if case_name.startswith(mesh_name):
+            case_mesh_name = case_data["hydro_data"]["body_name"].decode("utf-8")
+            if case_mesh_name == mesh_name:
                 cases.append({"name": case_name, "params": case_data["params"]})
         return cases
 
@@ -476,7 +483,7 @@ class FleetMaster:
 
         # First, mark all cases as not exact matches.
         for this_case in candidate_cases:
-            this_case["exact_match"] = True
+            this_case["exact_match"] = False
 
         # First, look for a practically equivalent match.
         for this_case in candidate_cases:
