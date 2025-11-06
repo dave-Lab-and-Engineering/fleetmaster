@@ -414,9 +414,13 @@ class FleetMaster:
 
                 continue
 
-            if (diffraction_force := hydro_data.get("diffraction_force")) is not None:
-                hydro_data["force_amps"] = np.abs(diffraction_force)
-                hydro_data["force_phase_rad"] = np.angle(diffraction_force)
+            if (excitation_force := hydro_data.get("excitation_force")) is not None:
+                # The structure from capytaine is (omega, direction, n_raos).
+                # Mafredo needs to have n_raos first.
+                # Transpose to (n_raos, omega, direction) for consistency.
+                excitation_force = np.transpose(excitation_force, (2, 0, 1))
+                hydro_data["force_amps"] = np.abs(excitation_force)
+                hydro_data["force_phase_rad"] = np.angle(excitation_force)
             else:
                 logger.warning(f"Case group '{group_name}' is missing diffraction force data.")
 
