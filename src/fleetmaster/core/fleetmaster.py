@@ -253,46 +253,28 @@ class FleetMaster:
 
     def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1 | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
-        try:
-            hyddb = Hyddb1()
 
-            # Extract data from the hydro_data dictionary, which comes from the HDF5 file
-            hyddb.frequencies = hydro_data["omega"]
-            hyddb.directions = np.rad2deg(hydro_data["wave_direction"])
-            hyddb.water_depth = float(hydro_data["water_depth"])
-            hyddb.water_density = float(hydro_data["rho"])
-            hyddb.gravity = float(hydro_data["g"])
+        # Extract data from the hydro_data dictionary, which comes from the HDF5 file
+        omega = hydro_data["omega"]
+        added_mass = hydro_data["added_mass"]
+        damping = hydro_data["radiation_damping"]
+        directions_deg = np.rad2deg(hydro_data["wave_direction"])
+        excitations = hydro_data["excitation_force"]
+        force_amps = np.transpose(np.abs(excitations), (2, 0, 1))
+        force_phases = np.transpose(np.angle(excitations), (2, 0, 1))
 
-            hyddb._added_mass = hydro_data["added_mass"]
-            hyddb._damping = hydro_data["radiation_damping"]
+        hyddb = Hyddb1()
 
-            hyddb._force = []
-            influenced_dofs = hydro_data["influenced_dof"]
-            # The influenced_dof is stored as a byte string in the HDF5 file, so we need to decode it
-            if isinstance(influenced_dofs[0], bytes):
-                influenced_dofs = [dof.decode("utf-8") for dof in influenced_dofs]
+        hyddb.set_data(
+            omega=omega,
+            added_mass=added_mass,
+            damping=damping,
+            directions=directions_deg,
+            force_amps=force_amps,
+            force_phase_rad=force_phases,
+        )
 
-            for i, dof in enumerate(influenced_dofs):
-                logger.debug(f"Processing force RAO for dof: {dof}")
-                rao = ForceRAO(i, hyddb.frequencies, hyddb.directions)
-
-                # The excitation_force is a complex array. We need to get the amplitude and phase
-                # The data is stored as a structured array with fields 're' and 'im'
-                force_complex = hydro_data["excitation_force"][:, :, i]
-                force_values = force_complex["re"] + 1j * force_complex["im"]
-
-                rao.set_data(np.abs(force_values), np.angle(force_values))
-                hyddb._force.append(rao)
-
-        except KeyError as e:
-            logger.exception(f"Cannot create Hyddb1 object: Hydrodynamic data is missing a required key: {e}")
-            logger.error(f"Available keys: {list(hydro_data.keys())}")
-            return None
-        except Exception:
-            logger.exception("Failed to create Hyddb1 object during instantiation or data setting:")
-            return None
-        else:
-            return hyddb
+        return hyddb
 
     def get_hyddb1(self) -> HyddbResult:
         """
