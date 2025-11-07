@@ -68,7 +68,7 @@ class FleetMaster:
 
         self._best_match_name: str | None = None
         self._match_error: float = np.inf
-        self._best_match_hydro_data: dict[str, Any] | None = None
+        self._best_match_hydro_data: xr.Dataset | None = None
 
         self._load_database()
 
@@ -253,7 +253,7 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1 | None:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
 
         # Extract data from the hydro_data dictionary, which comes from the HDF5 file

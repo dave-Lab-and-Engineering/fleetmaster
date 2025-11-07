@@ -826,7 +826,7 @@ def run_simulation_batch(settings: SimulationSettings) -> None:
     logger.info(f"✅ Simulation batch finished. Results saved to {output_file}")
 
 
-def create_hyddb_from_capytaine_file(filename):
+def create_hyddb_from_capytaine_file(filename: Path | str) -> Any:
     """Loads hydrodynamic data from a  dataset produced with capytaine.
 
     - Wave forces,
@@ -846,7 +846,7 @@ def create_hyddb_from_capytaine_file(filename):
     return hyddb
 
 
-def create_hyd_from_capytaine_data(dataset):
+def create_hyd_from_capytaine_data(dataset: xr.Dataset) -> Any:
     hyddb = Hyddb1()
 
     hyddb._force.clear()
@@ -867,7 +867,7 @@ def create_hyd_from_capytaine_data(dataset):
     return hyddb
 
 
-def create_rao_from_capytaine_wave_force(dataset, mode: MotionMode):
+def create_rao_from_capytaine_wave_force(dataset: xr.Dataset, mode: Any) -> Any:
     """
     Reads hydrodynamic data from a netCFD file created with capytaine and copies the
     data for the requested mode into the object.
