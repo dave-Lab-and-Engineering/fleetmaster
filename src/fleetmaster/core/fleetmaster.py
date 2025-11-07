@@ -12,7 +12,9 @@ from typing import Any
 import h5py
 import numpy as np
 import trimesh.transformations as tf
-from mafredo import Hyddb1
+import xarray as xr
+from mafredo import Hyddb1, MotionMode, Rao
+from mafredo.helpers import MotionModeToStr, dof_names_to_numbers
 
 from .engine import (
     MESH_GROUP_NAME,
@@ -251,40 +253,44 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
+
+        hyd = Hyddb1()
+        hyd._force.clear()
+
+        dataset = xr.Dataset.from_dict(hydro_data)
+        wave_direction = np.deg2rad(dataset["wave_direction"])
+        dataset = dataset.assign_coords(wave_direction=wave_direction)
+
+        for mode in MotionMode:
+            rao = Rao()
+            if "excitation_force" not in dataset:
+                dataset["excitation_force"] = dataset["Froude_Krylov_force"] + dataset["diffraction_force"]
+
+            cmode = MotionModeToStr(mode)
+
+            da = dataset["excitation_force"].sel(influenced_mode=cmode)
+
+            rao._data = xr.DataSet()
+            rao._data["amplitude"] = np.abs(da)
+            rao._data["phase"] = rao.data["amplitude"] * 0.0  # To avoid shape mismatch
+            rao._data["phase"].values = np.angle(da)
+            rao.mode = mode
+
+            # for the hyddb we use kN
+            rao.scale(hyd._N_to_kN)
+            hyd._force.append(rao)
+
+        hyd._damping = dof_names_to_numbers(dataset["radation_damping"] * hyd._N_to_kN)
+        hyd._mass = dof_names_to_numbers(dataset["added_mass"] * hyd._kg_to_mt)
+
         try:
-            # This maps the names from the Capytaine dataset to the names Hyddb1 expects.
-            capytaine_to_hyddb_map = {
-                "omega": "omega",
-                "added_mass": "added_mass",
-                "radiation_damping": "damping",
-                "wave_direction": "directions",
-                "force_amps": "force_amps",
-                "force_phase_rad": "force_phase_rad",
-            }
+            hyd._check_dimensions()
+        except ValueError:
+            logger.exception("Error while checking Hyddb1 dimensions.")
 
-            # Check if all necessary Capytaine keys are present in the loaded data.
-            required_capytaine_keys = list(capytaine_to_hyddb_map.keys())
-            if not all(key in hydro_data for key in required_capytaine_keys):
-                logger.error("Cannot create Hyddb1 object: Hydrodynamic data is missing one or more required keys.")
-                missing_keys = [key for key in required_capytaine_keys if key not in hydro_data]
-                logger.error(f"Missing keys: {missing_keys}")
-                logger.error(f"Available keys: {list(hydro_data.keys())}")
-                return None
-
-            # Create a new dictionary with the keys renamed for Hyddb1.
-            data_for_hyddb = {
-                hyddb_key: hydro_data[capytaine_key] for capytaine_key, hyddb_key in capytaine_to_hyddb_map.items()
-            }
-
-            hyddb = Hyddb1()
-            hyddb.set_data(**data_for_hyddb)
-        except Exception:
-            logger.exception("Failed to create Hyddb1 object during instantiation or data setting:")
-            return None
-        else:
-            return hyddb
+        return hyd
 
     def get_hyddb1(self) -> HyddbResult:
         """
@@ -413,16 +419,6 @@ class FleetMaster:
                 logger.warning(f"Case group '{group_name}' contains no datasets. Skipping.")
 
                 continue
-
-            if (excitation_force := hydro_data.get("excitation_force")) is not None:
-                # The structure from capytaine is (omega, direction, n_raos).
-                # Mafredo needs to have n_raos first.
-                # Transpose to (n_raos, omega, direction) for consistency.
-                excitation_force = np.transpose(excitation_force, (2, 0, 1))
-                hydro_data["force_amps"] = np.abs(excitation_force)
-                hydro_data["force_phase_rad"] = np.angle(excitation_force)
-            else:
-                logger.warning(f"Case group '{group_name}' is missing diffraction force data.")
 
             loaded_cases[group_name] = {
                 "params": params,
