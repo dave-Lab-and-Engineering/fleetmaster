@@ -27,7 +27,7 @@ from .settings import MeshConfig
 
 logger = logging.getLogger(__name__)
 
-type HyddbResult = tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]
+HyddbResult = tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]
 
 
 class FleetMaster:
