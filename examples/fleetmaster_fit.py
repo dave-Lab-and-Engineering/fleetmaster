@@ -53,6 +53,17 @@ def _run_and_print_test_case(
     best_mesh_name = fm._best_match_name
     hyddb, _origin, _velocity, _waterdepth = fm.get_hyddb1()
 
+    try:
+        with open("database_structure_hyd2.txt", "w", encoding="utf-8") as f:
+            f.write("--- Capytaine Hyd Structure 2 ---\n")
+
+            for cnt, rao in enumerate(hyddb._force):
+                f.write(f"\n\n--- RAO  {cnt} ---\n")
+                f.write(str(rao._data))
+        logger.info("Successfully wrote database structure to database_structure.txt")
+    except Exception:
+        logger.exception("Failed to write database structure")
+
     print(f"\n--- Result for Test Case {case_number} ---")
     if error != np.inf:
         print(f"✅ Best match for {best_mesh_name} found with error: {error:.6f}")
@@ -60,8 +71,9 @@ def _run_and_print_test_case(
             print(f"   - Successfully retrieved Hyddb1 object with {hyddb.n_frequencies} frequencies.")
             # Demonstrate saving the hyddb1 object
             try:
-                hyd_filename = HERE / f"case_{case_number}.hyd"
-                hyddb.to_hyd_file(str(hyd_filename))
+                hyd_filename = HERE / f"case_{case_number}.dhyd"
+                # hyddb.to_hyd_file(str(hyd_filename))
+                hyddb.save_as(str(hyd_filename))
                 print(f"   - Saved Hyddb1 object to '{hyd_filename}'")
             except Exception as e:
                 print(f"   - Failed to save Hyddb1 object: {e}")
@@ -100,22 +112,22 @@ def run_fleetmaster_fitting_example():
     )
 
     # --- Test Case 1: A transformation that should perfectly match an existing mesh ---
-    _run_and_print_test_case(
-        case_number=2,
-        description="Exact Match Draft 1 meter",
-        fm=fm,
-        translation=[0.0, 0.0, -2.0],
-        rotation_deg=[0.0, 0.0, 0.0],
-    )
+    # _run_and_print_test_case(
+    #     case_number=2,
+    #     description="Exact Match Draft 1 meter",
+    #     fm=fm,
+    #     translation=[0.0, 0.0, -2.0],
+    #     rotation_deg=[0.0, 0.0, 0.0],
+    # )
 
-    # --- Test Case 2: A transformation with irrelevant translations and rotations ---
-    _run_and_print_test_case(
-        case_number=3,
-        description="Move down 1.0 and rotate 20 deg pitch, 20 deg roll, 15 deg yaw",
-        fm=fm,
-        translation=[2.5, -4.2, -1.0],  # Added dx, dy and dz
-        rotation_deg=[20.0, 20.0, 15.0],  # Added yaw
-    )
+    # # --- Test Case 2: A transformation with irrelevant translations and rotations ---
+    # _run_and_print_test_case(
+    #     case_number=3,
+    #     description="Move down 1.0 and rotate 20 deg pitch, 20 deg roll, 15 deg yaw",
+    #     fm=fm,
+    #     translation=[2.5, -4.2, -1.0],  # Added dx, dy and dz
+    #     rotation_deg=[20.0, 20.0, 15.0],  # Added yaw
+    # )
 
 
 if __name__ == "__main__":

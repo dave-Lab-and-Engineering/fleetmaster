@@ -16,7 +16,8 @@ import numpy.typing as npt
 import trimesh
 import xarray as xr
 from capytaine.io.xarray import separate_complex_values
-from mafredo import Hyddb1
+from mafredo import Hyddb1, Rao
+from mafredo.helpers import MotionMode, MotionModeToStr, dof_names_to_numbers
 
 from .exceptions import LidAndSymmetryEnabledError
 from .io import load_meshes_from_hdf5
@@ -664,15 +665,7 @@ def _process_and_save_single_case(
     sep = separate_complex_values(database)
 
     file_out_nc = output_file.with_suffix(".nc")
-    file_out_hyd = output_file.with_suffix(".hyd")
-
-    file_out_hyd = output_file.with_suffix(".hyd")
-
-    # Replace 'inf' with a large number for NetCDF compatibility
-    if "water_depth" in sep.coords:
-        if np.isinf(sep["water_depth"].load().item()):
-            logger.warning("Replacing 'inf' in water_depth with 1.0e20 for NetCDF compatibility.")
-            sep = sep.assign_coords(water_depth=1.0e20)
+    file_out_hyd = output_file.with_suffix(".dhyd")
 
     logger.debug(f"Writing intermediate data to {file_out_nc}")
     sep.to_netcdf(
@@ -693,6 +686,8 @@ def _process_and_save_single_case(
     try:
         with open("database_structure_hyd.txt", "w", encoding="utf-8") as f:
             f.write("--- Capytaine Hyd Structure ---\n")
+            for cnt, d in enumerate(dir(hyd)):
+                f.write(f"\n\n--- attr  {cnt} : {d}")
 
             for cnt, rao in enumerate(hyd._force):
                 f.write(f"\n\n--- RAO  {cnt} ---\n")
@@ -881,3 +876,84 @@ def run_simulation_batch(settings: SimulationSettings) -> None:
             )
 
     logger.info(f"✅ Simulation batch finished. Results saved to {output_file}")
+
+
+def create_hyddb_from_capytaine_file(filename):
+    """Loads hydrodynamic data from a  dataset produced with capytaine.
+
+    - Wave forces,
+    - radiation_damping and
+    - added_mass are read.
+
+    See Also:
+        Rao.wave_force_from_capytaine
+    """
+
+    from capytaine.io.xarray import merge_complex_values
+
+    dataset = merge_complex_values(xr.open_dataset(filename))
+
+    hyddb = create_hyd_from_capytaine_data(dataset)
+
+    return hyddb
+
+
+def create_hyd_from_capytaine_data(dataset):
+    hyddb = Hyddb1()
+
+    hyddb._force.clear()
+
+    for mode in MotionMode:
+        r = create_rao_from_capytaine_wave_force(dataset, mode)
+        r.scale(hyddb._N_to_kN)
+        hyddb._force.append(r)
+
+    hyddb._damping = dof_names_to_numbers(dataset["radiation_damping"] * hyddb._N_to_kN)
+    hyddb._mass = dof_names_to_numbers(dataset["added_mass"] * hyddb._kg_to_mt)
+
+    try:
+        hyddb._check_dimensions()  # self-check
+    except ValueError:
+        logger.exception("Error when reading hydrodynamic data from")
+
+    return hyddb
+
+
+def create_rao_from_capytaine_wave_force(dataset, mode: MotionMode):
+    """
+    Reads hydrodynamic data from a netCFD file created with capytaine and copies the
+    data for the requested mode into the object.
+
+    Args:
+        filename: .nc file to read from
+        mode: Name of the mode to read MotionMode
+
+    Returns:
+        None
+
+    Examples:
+        _test = Rao()
+        _test.wave_force_from_capytaine(r"capytaine.nc", MotionMode.HEAVE)
+
+    """
+    rao = Rao()
+
+    wave_direction = dataset["wave_direction"] * (180 / np.pi)  # convert rad to deg
+    dataset = dataset.assign_coords(wave_direction=wave_direction)
+
+    if "excitation_force" not in dataset:
+        dataset["excitation_force"] = dataset["Froude_Krylov_force"] + dataset["diffraction_force"]
+
+    cmode = MotionModeToStr(mode)
+
+    da = dataset["excitation_force"].sel(influenced_dof=cmode)
+
+    rao._data = xr.Dataset()
+
+    rao._data["amplitude"] = np.abs(da)
+
+    rao._data["phase"] = rao._data["amplitude"]  # To avoid shape mismatch,
+    rao._data["phase"].values = np.angle(da)  # first copy with dummy data - then fill
+
+    rao.mode = mode
+    return rao

@@ -19,6 +19,7 @@ from .engine import (
     EngineMesh,
     _apply_mesh_translation_and_rotation,
     _prepare_capytaine_body,
+    create_hyd_from_capytaine_data,
     load_meshes_from_hdf5,
 )
 from .exceptions import BaseMeshIsNoneError, DatabaseFileNotFoundError, HDF5AttributeError, MeshLoadError
@@ -291,7 +292,7 @@ class FleetMaster:
             logger.warning("No hydrodynamic data loaded. Run find_best_case() first.")
             return None, None, None, None
 
-        hyddb = self._create_hyddb_from_data(self._best_match_hydro_data)
+        hyddb = create_hyd_from_capytaine_data(self._best_match_hydro_data)
         if not hyddb:
             return None, None, None, None
 
