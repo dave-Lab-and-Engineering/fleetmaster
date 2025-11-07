@@ -270,7 +270,7 @@ class FleetMaster:
 
             cmode = MotionModeToStr(mode)
 
-            da = dataset["excitation_force"].sel(influenced_mode=cmode)
+            da = dataset["excitation_force"].sel(force_mode=cmode)
 
             rao._data = xr.DataSet()
             rao._data["amplitude"] = np.abs(da)
@@ -282,7 +282,7 @@ class FleetMaster:
             rao.scale(hyd._N_to_kN)
             hyd._force.append(rao)
 
-        hyd._damping = dof_names_to_numbers(dataset["radation_damping"] * hyd._N_to_kN)
+        hyd._damping = dof_names_to_numbers(dataset["radiation_damping"] * hyd._N_to_kN)
         hyd._mass = dof_names_to_numbers(dataset["added_mass"] * hyd._kg_to_mt)
 
         try:
