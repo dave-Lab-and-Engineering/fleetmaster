@@ -53,17 +53,6 @@ def _run_and_print_test_case(
     best_mesh_name = fm._best_match_name
     hyddb, _origin, _velocity, _waterdepth = fm.get_hyddb1()
 
-    try:
-        with open("database_structure_hyd2.txt", "w", encoding="utf-8") as f:
-            f.write("--- Capytaine Hyd Structure 2 ---\n")
-
-            for cnt, rao in enumerate(hyddb._force):
-                f.write(f"\n\n--- RAO  {cnt} ---\n")
-                f.write(str(rao._data))
-        logger.info("Successfully wrote database structure to database_structure.txt")
-    except Exception:
-        logger.exception("Failed to write database structure")
-
     print(f"\n--- Result for Test Case {case_number} ---")
     if error != np.inf:
         print(f"✅ Best match for {best_mesh_name} found with error: {error:.6f}")
