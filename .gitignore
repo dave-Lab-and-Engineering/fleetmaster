@@ -149,4 +149,4 @@ cython_debug/
 *.hyd
 *.dhyd
 /examples/*.png
-datastructure*.txt
+database_structure*.txt
