@@ -251,35 +251,43 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1 | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
         try:
-            # This maps the names from the Capytaine dataset to the names Hyddb1 expects.
-            capytaine_to_hyddb_map = {
-                "wave_frequency": "omega",
-                "added_mass": "added_mass",
-                "radiation_damping": "damping",
-                "wave_direction": "directions",
-                "diffraction_force": "force_amps",
-                "diffraction_phase": "force_phase_rad",
-            }
-
-            # Check if all necessary Capytaine keys are present in the loaded data.
-            required_capytaine_keys = list(capytaine_to_hyddb_map.keys())
-            if not all(key in hydro_data for key in required_capytaine_keys):
-                logger.error("Cannot create Hyddb1 object: Hydrodynamic data is missing one or more required keys.")
-                missing_keys = [key for key in required_capytaine_keys if key not in hydro_data]
-                logger.error(f"Missing keys: {missing_keys}")
-                logger.error(f"Available keys: {list(hydro_data.keys())}")
-                return None
-
-            # Create a new dictionary with the keys renamed for Hyddb1.
-            data_for_hyddb = {
-                hyddb_key: hydro_data[capytaine_key] for capytaine_key, hyddb_key in capytaine_to_hyddb_map.items()
-            }
-
             hyddb = Hyddb1()
-            hyddb.set_data(**data_for_hyddb)
+
+            # Extract data from the hydro_data dictionary, which comes from the HDF5 file
+            hyddb.frequencies = hydro_data["omega"]
+            hyddb.directions = np.rad2deg(hydro_data["wave_direction"])
+            hyddb.water_depth = float(hydro_data["water_depth"])
+            hyddb.water_density = float(hydro_data["rho"])
+            hyddb.gravity = float(hydro_data["g"])
+
+            hyddb._added_mass = hydro_data["added_mass"]
+            hyddb._damping = hydro_data["radiation_damping"]
+
+            hyddb._force = []
+            influenced_dofs = hydro_data["influenced_dof"]
+            # The influenced_dof is stored as a byte string in the HDF5 file, so we need to decode it
+            if isinstance(influenced_dofs[0], bytes):
+                influenced_dofs = [dof.decode("utf-8") for dof in influenced_dofs]
+
+            for i, dof in enumerate(influenced_dofs):
+                logger.debug(f"Processing force RAO for dof: {dof}")
+                rao = ForceRAO(i, hyddb.frequencies, hyddb.directions)
+
+                # The excitation_force is a complex array. We need to get the amplitude and phase
+                # The data is stored as a structured array with fields 're' and 'im'
+                force_complex = hydro_data["excitation_force"][:, :, i]
+                force_values = force_complex["re"] + 1j * force_complex["im"]
+
+                rao.set_data(np.abs(force_values), np.angle(force_values))
+                hyddb._force.append(rao)
+
+        except KeyError as e:
+            logger.exception(f"Cannot create Hyddb1 object: Hydrodynamic data is missing a required key: {e}")
+            logger.error(f"Available keys: {list(hydro_data.keys())}")
+            return None
         except Exception:
             logger.exception("Failed to create Hyddb1 object during instantiation or data setting:")
             return None

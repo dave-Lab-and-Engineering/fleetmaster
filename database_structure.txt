@@ -23,5 +23,5 @@ Data variables:
     Froude_Krylov_force  (omega, wave_direction, influenced_dof) complex128 576B ...
     excitation_force     (omega, wave_direction, influenced_dof) complex128 576B ...
 Attributes:
-    creation_of_dataset:  2025-11-07T20:41:05.612188
+    creation_of_dataset:  2025-11-07T20:58:26.146559
     capytaine_version:    2.3.1
