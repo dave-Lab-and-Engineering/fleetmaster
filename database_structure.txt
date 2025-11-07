@@ -1,0 +1,27 @@
+--- Capytaine Dataset Structure ---
+<xarray.Dataset> Size: 4kB
+Dimensions:              (omega: 3, radiating_dof: 6, influenced_dof: 6,
+                          wave_direction: 2)
+Coordinates: (12/13)
+  * omega                (omega) float64 24B 0.6283 1.257 6.283
+  * radiating_dof        (radiating_dof) <U5 120B 'Surge' 'Sway' ... 'Yaw'
+  * influenced_dof       (influenced_dof) <U5 120B 'Surge' 'Sway' ... 'Yaw'
+  * wave_direction       (wave_direction) float64 16B 0.0 1.571
+    g                    float64 8B 9.81
+    rho                  float64 8B 1e+03
+    ...                   ...
+    water_depth          float64 8B inf
+    forward_speed        float64 8B 0.0
+    freq                 (omega) float64 24B 0.1 0.2 1.0
+    period               (omega) float64 24B 10.0 5.0 1.0
+    wavenumber           (omega) float64 24B 0.04024 0.161 4.024
+    wavelength           (omega) float64 24B 156.1 39.03 1.561
+Data variables:
+    added_mass           (omega, radiating_dof, influenced_dof) float64 864B ...
+    radiation_damping    (omega, radiating_dof, influenced_dof) float64 864B ...
+    diffraction_force    (omega, wave_direction, influenced_dof) complex128 576B ...
+    Froude_Krylov_force  (omega, wave_direction, influenced_dof) complex128 576B ...
+    excitation_force     (omega, wave_direction, influenced_dof) complex128 576B ...
+Attributes:
+    creation_of_dataset:  2025-11-07T20:41:05.612188
+    capytaine_version:    2.3.1

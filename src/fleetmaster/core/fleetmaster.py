@@ -12,9 +12,7 @@ from typing import Any
 import h5py
 import numpy as np
 import trimesh.transformations as tf
-import xarray as xr
-from mafredo import Hyddb1, MotionMode, Rao
-from mafredo.helpers import MotionModeToStr, dof_names_to_numbers
+from mafredo import Hyddb1
 
 from .engine import (
     MESH_GROUP_NAME,
@@ -29,7 +27,7 @@ from .settings import MeshConfig
 
 logger = logging.getLogger(__name__)
 
-HyddbResult = tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]
+type HyddbResult = tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]
 
 
 class FleetMaster:
@@ -199,18 +197,18 @@ class FleetMaster:
         else:
             logger.warning("Could not find a suitable case.")
 
-    def _load_hydro_data(self, case_name: str) -> None:
+    def _load_hydro_data(self, case_group_name: str) -> None:
         """Loads hydrodynamic data for the given case group name from the pre-loaded cases."""
-        logger.info(f"Retrieving hydrodynamic data for case group '{case_name}'...")
+        logger.info(f"Retrieving hydrodynamic data for case group '{case_group_name}'...")
 
-        case_data = self._loaded_cases.get(case_name)
+        case_data = self._loaded_cases.get(case_group_name)
 
         if case_data:
             self._best_match_hydro_data = case_data["hydro_data"]
-            logger.info(f"Successfully retrieved hydrodynamic data for case '{case_name}'.")
+            logger.info(f"Successfully retrieved hydrodynamic data for case '{case_group_name}'.")
         else:
             self._best_match_hydro_data = None
-            logger.error(f"Case group '{case_name}' not found in pre-loaded cases.")
+            logger.error(f"Case group '{case_group_name}' not found in pre-loaded cases.")
 
     def get_match_error(self) -> float:
         """
@@ -253,44 +251,40 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
-
-        hyd = Hyddb1()
-        hyd._force.clear()
-
-        dataset = xr.Dataset.from_dict(hydro_data)
-        wave_direction = np.deg2rad(dataset["wave_direction"])
-        dataset = dataset.assign_coords(wave_direction=wave_direction)
-
-        for mode in MotionMode:
-            rao = Rao()
-            if "excitation_force" not in dataset:
-                dataset["excitation_force"] = dataset["Froude_Krylov_force"] + dataset["diffraction_force"]
-
-            cmode = MotionModeToStr(mode)
-
-            da = dataset["excitation_force"].sel(force_mode=cmode)
-
-            rao._data = xr.DataSet()
-            rao._data["amplitude"] = np.abs(da)
-            rao._data["phase"] = rao.data["amplitude"] * 0.0  # To avoid shape mismatch
-            rao._data["phase"].values = np.angle(da)
-            rao.mode = mode
-
-            # for the hyddb we use kN
-            rao.scale(hyd._N_to_kN)
-            hyd._force.append(rao)
-
-        hyd._damping = dof_names_to_numbers(dataset["radiation_damping"] * hyd._N_to_kN)
-        hyd._mass = dof_names_to_numbers(dataset["added_mass"] * hyd._kg_to_mt)
-
         try:
-            hyd._check_dimensions()
-        except ValueError:
-            logger.exception("Error while checking Hyddb1 dimensions.")
+            # This maps the names from the Capytaine dataset to the names Hyddb1 expects.
+            capytaine_to_hyddb_map = {
+                "wave_frequency": "omega",
+                "added_mass": "added_mass",
+                "radiation_damping": "damping",
+                "wave_direction": "directions",
+                "diffraction_force": "force_amps",
+                "diffraction_phase": "force_phase_rad",
+            }
 
-        return hyd
+            # Check if all necessary Capytaine keys are present in the loaded data.
+            required_capytaine_keys = list(capytaine_to_hyddb_map.keys())
+            if not all(key in hydro_data for key in required_capytaine_keys):
+                logger.error("Cannot create Hyddb1 object: Hydrodynamic data is missing one or more required keys.")
+                missing_keys = [key for key in required_capytaine_keys if key not in hydro_data]
+                logger.error(f"Missing keys: {missing_keys}")
+                logger.error(f"Available keys: {list(hydro_data.keys())}")
+                return None
+
+            # Create a new dictionary with the keys renamed for Hyddb1.
+            data_for_hyddb = {
+                hyddb_key: hydro_data[capytaine_key] for capytaine_key, hyddb_key in capytaine_to_hyddb_map.items()
+            }
+
+            hyddb = Hyddb1()
+            hyddb.set_data(**data_for_hyddb)
+        except Exception:
+            logger.exception("Failed to create Hyddb1 object during instantiation or data setting:")
+            return None
+        else:
+            return hyddb
 
     def get_hyddb1(self) -> HyddbResult:
         """
@@ -433,8 +427,7 @@ class FleetMaster:
         """
         cases = []
         for case_name, case_data in self._loaded_cases.items():
-            case_mesh_name = case_data["hydro_data"]["body_name"].decode("utf-8")
-            if case_mesh_name == mesh_name:
+            if case_name.startswith(mesh_name):
                 cases.append({"name": case_name, "params": case_data["params"]})
         return cases
 
@@ -483,7 +476,7 @@ class FleetMaster:
 
         # First, mark all cases as not exact matches.
         for this_case in candidate_cases:
-            this_case["exact_match"] = False
+            this_case["exact_match"] = True
 
         # First, look for a practically equivalent match.
         for this_case in candidate_cases:

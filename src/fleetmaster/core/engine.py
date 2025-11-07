@@ -10,10 +10,13 @@ from typing import Any
 
 import capytaine as cpt
 import h5py
+import mafredo
 import numpy as np
 import numpy.typing as npt
 import trimesh
 import xarray as xr
+from capytaine.io.xarray import separate_complex_values
+from mafredo import Hyddb1
 
 from .exceptions import LidAndSymmetryEnabledError
 from .io import load_meshes_from_hdf5
@@ -96,8 +99,8 @@ def make_database(
 
     for coord_name, coord_data in database.coords.items():
         if hasattr(coord_data.dtype, "categories"):  # Check for categorical dtype without pandas
-            logger.debug(f"Converting coordinate '{coord_name}' from Categorical to string dtype.")
-            database[coord_name] = database[coord_name].astype(str)
+            logger.debug(f"Converting coordinate '{coord_name}' from Categorical to unicode dtype.")
+            database[coord_name] = database[coord_name].astype("U")
 
     return database
 
@@ -648,6 +651,59 @@ def _process_and_save_single_case(
         "forward_speed": case_params["forward_speed"],
     }
     database = make_database(body=boat, **db_params)
+
+    ### JUST FOR TESTING
+    try:
+        with open("database_structure.txt", "w", encoding="utf-8") as f:
+            f.write("--- Capytaine Dataset Structure ---\n")
+            f.write(str(database))
+        logger.info("Successfully wrote database structure to database_structure.txt")
+    except Exception:
+        logger.exception("Failed to write database structure")
+
+    sep = separate_complex_values(database)
+
+    file_out_nc = output_file.with_suffix(".nc")
+    file_out_hyd = output_file.with_suffix(".hyd")
+
+    file_out_hyd = output_file.with_suffix(".hyd")
+
+    # Replace 'inf' with a large number for NetCDF compatibility
+    if "water_depth" in sep.coords:
+        if np.isinf(sep["water_depth"].load().item()):
+            logger.warning("Replacing 'inf' in water_depth with 1.0e20 for NetCDF compatibility.")
+            sep = sep.assign_coords(water_depth=1.0e20)
+
+    logger.debug(f"Writing intermediate data to {file_out_nc}")
+    sep.to_netcdf(
+        str(file_out_nc),
+        engine="h5netcdf",
+        encoding={
+            "radiating_dof": {"dtype": "U"},
+            "influenced_dof": {"dtype": "U"},
+            "complex": {"dtype": "U"},
+        },
+    )
+
+    logger.debug(f"Successfully wrote intermediate file. Now reading with mafredo from {file_out_nc}.")
+    hyd = Hyddb1.create_from_capytaine(filename=str(file_out_nc))
+
+    hyd.symmetry = mafredo.Symmetry.No
+
+    try:
+        with open("database_structure_hyd.txt", "w", encoding="utf-8") as f:
+            f.write("--- Capytaine Hyd Structure ---\n")
+
+            for cnt, rao in enumerate(hyd._force):
+                f.write(f"\n\n--- RAO  {cnt} ---\n")
+                f.write(str(rao._data))
+        logger.info("Successfully wrote database structure to database_structure.txt")
+    except Exception:
+        logger.exception("Failed to write database structure")
+
+    hyd.save_as(file_out_hyd)
+
+    ### END JUST FOR TESTING
 
     if not case_params["combine_cases"]:
         logger.info(f"Writing simulation results to group '{group_name}' in HDF5 file: {output_file}")
