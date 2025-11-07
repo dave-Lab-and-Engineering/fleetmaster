@@ -702,15 +702,12 @@ def _process_and_save_single_case(
 
     if not case_params["combine_cases"]:
         logger.info(f"Writing simulation results to group '{group_name}' in HDF5 file: {output_file}")
+        database.attrs["stl_mesh_name"] = mesh_name
+        if transformation_matrix is not None:
+            database.attrs["transformation_matrix"] = transformation_matrix
+        if boat.center_of_mass is not None:
+            database.attrs["cog_for_calculation"] = boat.center_of_mass
         database.to_netcdf(output_file, mode="a", group=group_name, engine="h5netcdf")
-        with h5py.File(output_file, "a") as f:
-            if group_name in f:
-                case_group = f[group_name]
-                case_group.attrs["stl_mesh_name"] = mesh_name
-                if transformation_matrix is not None:
-                    case_group.attrs["transformation_matrix"] = transformation_matrix
-                if boat.center_of_mass is not None:
-                    case_group.attrs["cog_for_calculation"] = boat.center_of_mass
 
     logger.debug(f"Successfully wrote data for case to group {group_name}.")
     return database

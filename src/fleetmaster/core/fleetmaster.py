@@ -11,6 +11,7 @@ from typing import Any
 
 import h5py
 import numpy as np
+import xarray as xr
 import trimesh.transformations as tf
 from mafredo import Hyddb1
 
@@ -366,49 +367,31 @@ class FleetMaster:
         }
 
     def _load_cases_from_file(self, f: Any) -> None:
-        """Loads all cases from the opened HDF5 file object."""
-
+        """Loads all cases from the opened HDF5 file object using xarray."""
         loaded_cases = {}
 
         for group_name in f:
             if group_name == MESH_GROUP_NAME:
                 continue  # Skip the mesh group
 
-            if not isinstance(f[group_name], h5py.Group):
+            if not isinstance(f.get(group_name), h5py.Group):
                 continue
-
-            group = f[group_name]
 
             params = self._parse_case_name(group_name)
-
             if not params:
                 logger.debug(f"Could not parse parameters from group name '{group_name}'. Not a case.")
-
                 continue
 
-            # Collect only actual datasets to avoid trying to index Datatype objects.
-            hydro_data = {}
-            # Iterate over dataset names (keys) and access objects by key to keep static analyzers happy.
-            for ds_name in group:
-                obj = group.get(ds_name)
-                if isinstance(obj, h5py.Dataset):
-                    try:
-                        hydro_data[ds_name] = obj[()]
-                    except Exception:
-                        logger.exception(
-                            f"Failed to read dataset '{ds_name}' in group '{group_name}'; skipping dataset."
-                        )
-                        continue
-
-            if not hydro_data:
-                logger.warning(f"Case group '{group_name}' contains no datasets. Skipping.")
-
+            try:
+                # Use xarray to open the group as a Dataset
+                hydro_data = xr.open_dataset(self.filename, group=group_name, engine="h5netcdf")
+                loaded_cases[group_name] = {
+                    "params": params,
+                    "hydro_data": hydro_data,
+                }
+            except Exception:
+                logger.exception(f"Failed to read group '{group_name}' with xarray; skipping.")
                 continue
-
-            loaded_cases[group_name] = {
-                "params": params,
-                "hydro_data": hydro_data,
-            }
 
         self._loaded_cases = loaded_cases
 
