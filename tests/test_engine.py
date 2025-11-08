@@ -399,7 +399,7 @@ def test_run_simulation_batch_with_base_origin(mock_prepare, mock_setup, mock_h5
     mock_prepare.return_value = trimesh.creation.box()
 
     settings = SimulationSettings(
-        stl_files=[{"file": str(stl_path)}],
+        stl_files=[MeshConfig(file=str(stl_path))],
         base_mesh=str(stl_path),
         base_origin=[1.0, 2.0, 3.0],
         output_directory=str(output_dir),
