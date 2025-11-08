@@ -42,17 +42,17 @@ TEST_CASES = [
     (
         "Case 1: Exact Match Draft 1 meter",
         [0.0, 0.0, -1.0],
-        [20.0, 20.0, 0.0],
+        [0.0, 0.0, 0.0],
         0.0,
-        "boxship_t_1_r_20_20_00",
+        "boxship_t_1_r_00_00_00",
         lambda dist: dist < 0.41,  # Exact matches are not zero due to regridding, so we use a small threshold.
     ),
     (
         "Case 2: Match with irrelevant translation/rotation noise (draft 1.0)",
-        [2.5, -4.2, -1.0],  # dx, dy noise
-        [20.0, 20.0, 15.0],  # yaw noise
+        [2.5, -4.2, -1.1],  # dx, dy noise
+        [0.0, 0.0, 15.0],  # yaw noise
         0.0,
-        "boxship_t_1_r_20_20_00",
+        "boxship_t_1_r_00_00_00",
         lambda dist: dist < 0.41,  # Distance should still be very small as the shape is identical.
     ),
     (
