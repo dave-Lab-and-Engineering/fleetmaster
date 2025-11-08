@@ -123,11 +123,8 @@ def test_fleetmaster_fitting(
     # 4. Run the fit
     fm.fit_mesh(transform=transform)
 
-    # 5. Find the best case for the given parameters
-    fm.find_best_case(forward_speed=0.0, water_depth=np.inf, water_level=water_level)
-
-    # 6. Get the results
-    best_match = fm._best_match_name
+    # 5. Get the results
+    best_match = fm.get_best_match_name()
     distance = fm.get_match_error()
 
     # 7. Perform assertions
