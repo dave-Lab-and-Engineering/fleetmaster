@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 import trimesh.transformations as tf
+import yaml
 
 from fleetmaster import FleetMaster
 from fleetmaster.core.engine import run_simulation_batch
@@ -31,14 +32,24 @@ def regression_hdf5_path() -> Path:
         pytest.fail(f"Settings file not found at {settings_path}. This test requires it to exist.")
 
     # 2. Load settings from the YAML file
-    settings = SimulationSettings.from_file(settings_path)
+    with open(settings_path) as f:
+        config = yaml.safe_load(f)
+    settings = SimulationSettings(**config)
 
-    # 3. Override settings for the test environment
+    # 3. Make file paths absolute relative to the settings file
+    settings_dir = settings_path.parent
+    if settings.base_mesh:
+        settings.base_mesh = str(settings_dir / settings.base_mesh)
+
+    for mesh_config in settings.stl_files:
+        mesh_config.file = str(settings_dir / mesh_config.file)
+
+    # 4. Override settings for the test environment
     settings.output_directory = str(output_hdf5_path.parent)
     settings.output_hdf5_file = str(output_hdf5_path.name)
     settings.overwrite_meshes = True  # Ensure we always regenerate for the test
 
-    # 4. Run the database generation
+    # 5. Run the database generation
     run_simulation_batch(settings)
 
     return output_hdf5_path

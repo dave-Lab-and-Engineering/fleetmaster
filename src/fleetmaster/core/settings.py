@@ -66,8 +66,8 @@ class SimulationSettings(BaseModel):
     stl_files: list[MeshConfig] = Field(description="A list of STL mesh files or mesh configurations.")
     output_directory: str | None = Field(default=None, description="Directory to save the output files.")
     output_hdf5_file: str = Field(default="results.hdf5", description="Path to the HDF5 output file.")
-    wave_periods: float | list[float] = Field(default=[5.0, 10.0, 15.0, 20.0])
-    wave_directions: float | list[float] = Field(default=[0.0, 45.0, 90.0, 135.0, 180.0])
+    wave_periods: list[float] = Field(default=[5.0, 10.0, 15.0, 20.0])
+    wave_directions: list[float] = Field(default=[0.0, 45.0, 90.0, 135.0, 180.0])
     forward_speed: float | list[float] = 0.0
     lid: bool = False
     add_center_of_mass: bool = False
@@ -82,6 +82,22 @@ class SimulationSettings(BaseModel):
     combine_cases: bool = Field(
         default=False, description="Combine all calculated cases for a single STL into one multi-dimensional dataset."
     )
+
+    @field_validator("wave_periods", "wave_directions", mode="before")
+    def parse_range_string(cls, v: Any) -> list[float]:
+        if isinstance(v, str):
+            try:
+                start, stop, step = map(float, v.split(":"))
+                return np.arange(start, stop, step).tolist()
+            except ValueError as e:
+                msg = f"Invalid range string format: {v}"
+                raise ValueError(msg) from e
+        if isinstance(v, (int, float)):
+            return [v]
+        if isinstance(v, list):
+            return v
+        msg = f"Unsupported type for wave_periods/wave_directions: {type(v)}"
+        raise TypeError(msg)
 
     @field_validator("stl_files", mode="before")
     def normalize_stl_files(cls, v: Any) -> Any:
