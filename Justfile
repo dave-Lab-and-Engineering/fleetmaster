@@ -137,10 +137,6 @@ fitting-example-hyd:
     @uv run python examples/fleetmaster_fit.py
 
 
-# Update the HDF5 database for the fitting example
-update-database:
-    @fleetmaster -v run --settings-file tests/data/settings.yml --overwrite-meshes --update-cases --output-directory tests/data; exit 0
-
 
 # clean examples directory
 clean-examples: clean-examples-stl clean-examples-hdf5 clean-examples-hyd clean-examples-nc
