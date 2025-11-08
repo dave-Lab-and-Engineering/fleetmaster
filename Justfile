@@ -138,7 +138,8 @@ fitting-example-hyd:
 
 
 # Update the HDF5 database for the fitting example
-update-database: fleetmaster-rotation
+update-database:
+    @fleetmaster -v run --settings-file tests/data/settings.yml --overwrite-meshes --update-cases --output-directory tests/data; exit 0
 
 
 # clean examples directory

@@ -148,5 +148,7 @@ cython_debug/
 *.stl
 *.hyd
 *.dhyd
-/examples/*.png
+/examples/*png
 database_structure*.txt
+!tests/data/boxship.hdf5
+!tests/data/boxship.stl

@@ -1,0 +1,54 @@
+#full Example configuration file for Fleetmaster
+#
+# This file defines a "scene" with multiple meshes.
+# - `base_mesh` is used to define the origin of the database (the center of mass of this mesh).
+# - `stl_files` is a list of meshes that should actually be simulated.
+#
+# In this example:
+# 1. `defraction_box.stl` defines the origin but is not simulated itself because it's not in the `stl_files` list.
+# 2. `defraction_box_1m.stl` and `defraction_box_2m.stl` are simulated.
+#    The `translation` vector for these files is [0, 0, 0] because the geometry in the STL files themselves
+#    already has the correct positin. The engine will calculate and store the final transformation
+#    relative to the `base_mesh` origin.
+
+# The base mesh is L x W x H = 3 x 2 x 3
+base_mesh: "boxship.stl"
+# The origin in the local coordinate system of the base mesh
+base_origin: [0, 0.0, 1.5]
+
+output_hdf5_file: boxship.hdf5
+grid_symmetry: false
+
+stl_files:
+  - file: "boxship_t_1_r_00_00_00.stl"
+    translation: [0.0, 0.0, -1.0]
+    rotation: [0.0, 0.0, 0.0]
+    # this puts the cog in the centre at the water level
+    cog: [0.0, 0.0, 0.0]
+
+  - file: "boxship_t_2_r_00_00_00.stl"
+    translation: [0.0, 0.0, -2.0]
+    rotation: [0.0, 0.0, 0.0]
+    # this puts the cog in the centre at the water level
+    cog: [0.0, 0.0, 0.0]
+
+  - file: "boxship_t_1_r_45_00_00.stl"
+    translation: [0.0, 0.0, -1.0]
+    rotation: [45, 0.0, 0.0]
+    # this puts the cog in the centre at the water level
+    cog: [0.0, 0.0, 0.0]
+
+  - file: "boxship_t_1_r_00_10_00.stl"
+    translation: [0.0, 0.0, -1.0]
+    rotation: [0, 10.0, 0.0]
+    # this puts the cog in the centre at the water level
+    cog: [0.0, 0.0, 0.0]
+
+  - file: "boxship_t_1_r_20_20_00.stl"
+    translation: [0.0, 0.0, -1.0]
+    rotation: [20, 20.0, 0.0]
+    # this puts the cog in the centre at the water level
+    cog: [0.0, 0.0, 0.0]
+
+wave_periods: 2:20.1:2
+wave_directions: 0:180:45

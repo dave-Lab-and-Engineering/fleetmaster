@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def regression_hdf5_path(tmp_path_factory, file_regression) -> Path:
     """
     Generates the HDF5 database from a single base STL and a set of transformations,
@@ -91,7 +91,8 @@ def regression_hdf5_path(tmp_path_factory, file_regression) -> Path:
     run_simulation_batch(settings)
 
     # 5. Check the generated HDF5 file against the golden master
-    file_regression.check(output_hdf5_path)
+    with open(output_hdf5_path, "rb") as f:
+        file_regression.check(f.read())
 
     return output_hdf5_path
 
