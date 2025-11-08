@@ -3,9 +3,11 @@
 import logging
 from pathlib import Path
 
+import numpy as np
 import pytest
+import trimesh.transformations as tf
 
-from fleetmaster.core.fitting import find_best_matching_mesh
+from fleetmaster import FleetMaster
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -93,7 +95,7 @@ TEST_CASES = [
     TEST_CASES,
     ids=[case[0] for case in TEST_CASES],
 )
-def test_find_best_matching_mesh(
+def test_fleetmaster_fitting(
     hdf5_path: Path,
     description: str,
     target_translation: list[float],
@@ -102,10 +104,33 @@ def test_find_best_matching_mesh(
     expected_match: str,
     distance_check,
 ):
-    """Tests the find_best_matching_mesh function with various scenarios."""
+    """Tests the FleetMaster mesh fitting with various scenarios."""
     logger.info(f"Running test: {description}")
-    best_match, distance = find_best_matching_mesh(hdf5_path, target_translation, target_rotation, water_level)
 
+    # 1. Instantiate FleetMaster
+    fm = FleetMaster(filename=hdf5_path)
+
+    # 2. Set parameters
+    fm.set_waterdepth(water_level)
+    fm.set_velocity(0.0)  # Assuming 0 velocity for these test cases
+
+    # 3. Construct transformation matrix
+    angles_rad = np.deg2rad(target_rotation)
+    rot = tf.euler_matrix(angles_rad[0], angles_rad[1], angles_rad[2], axes="sxyz")
+    transform = rot.copy()
+    transform[0:3, 3] = target_translation
+
+    # 4. Run the fit
+    fm.fit_mesh(transform=transform)
+
+    # 5. Find the best case for the given parameters
+    fm.find_best_case(forward_speed=0.0, water_depth=np.inf, water_level=water_level)
+
+    # 6. Get the results
+    best_match = fm._best_match_name
+    distance = fm.get_match_error()
+
+    # 7. Perform assertions
     assert best_match is not None, "A best match should have been found."
     assert best_match == expected_match
     assert distance_check(distance), f"Distance check failed for {description}. Got distance: {distance}"
