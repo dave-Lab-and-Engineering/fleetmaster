@@ -71,7 +71,7 @@ build: clean-build
 
 # Clean build artifacts
 clean-build:
-    @echo "🚀 Removing build artifacts"
+    @echo "🧹 Removing build artifacts"
     @uv run python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
 
 # ---------------------------------------
@@ -121,8 +121,8 @@ generate-box-mesh-half:
 generate-ship-rotation:
     @uv run python examples/defraction_box.py --output-dir examples --file-base boxship --only-base; exit 0
 
-# Run fleetmaster examples
-fleetmaster-all: fleetmaster-full fleetmaster-half fleetmaster-rotation
+# Run fleetmaster examples to demonstrate generation
+fleetmaster-all: fleetmaster-full fleetmaster-half fleetmaster-rotation fitting-example fitting-example-hyd
 fleetmaster-full: generate-box-mesh-full
     @fleetmaster -v run --settings-file examples/settings_full.yml --lid; exit 0
 fleetmaster-half: generate-box-mesh-half
@@ -133,16 +133,25 @@ fleetmaster-rotation: generate-ship-rotation
 fitting-example:
     @uv run python examples/fitting_example.py
 
+fitting-example-hyd:
+    @uv run python examples/fleetmaster_fit.py
+
 # clean examples directory
-clean-examples: clean-examples-stl clean-examples-hdf5
+clean-examples: clean-examples-stl clean-examples-hdf5 clean-examples-hyd clean-examples-nc
 # clean examples stl files
 clean-examples-stl:
-    @echo "🚀 Removing all stl example files"
+    @echo "🧹 Removing all stl example files"
     @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.stl')]"
 # clean examples hdf5 files
 clean-examples-hdf5:
-    @echo "🚀 Removing all hdf5 example files"
+    @echo "🧹 Removing all hdf5 example files"
     @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.hdf5')]"
+clean-examples-hyd:
+    @echo "🧹 Removing all hyd example files"
+    @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.[d]hyd')]"
+clean-examples-nc:
+    @echo "🧹 Removing all nc example files"
+    @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.nc')]"
 
 
 # ---------------------------------------
