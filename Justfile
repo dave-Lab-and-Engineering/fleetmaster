@@ -136,6 +136,11 @@ fitting-example:
 fitting-example-hyd:
     @uv run python examples/fleetmaster_fit.py
 
+
+# Update the HDF5 database for the fitting example
+update-database: fleetmaster-rotation
+
+
 # clean examples directory
 clean-examples: clean-examples-stl clean-examples-hdf5 clean-examples-hyd clean-examples-nc
 # clean examples stl files
