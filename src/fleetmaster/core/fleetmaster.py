@@ -339,12 +339,6 @@ class FleetMaster:
 
             return
 
-        # NOTE: load_meshes_from_hdf5 opens the HDF5 file again, which is suboptimal.
-
-        # For a complete single-pass implementation, the logic from that function
-
-        # would need to be integrated here.
-
         candidate_mesh_names = [str(name) for name in mesh_group if name != base_mesh_name_str]
 
         all_meshes_to_load = [base_mesh_name_str, *candidate_mesh_names]
@@ -353,7 +347,7 @@ class FleetMaster:
             mesh.metadata["name"]: EngineMesh(
                 name=mesh.metadata["name"], mesh=mesh, config=MeshConfig(file="from_hdf5")
             )
-            for mesh in load_meshes_from_hdf5(self.filename, all_meshes_to_load)
+            for mesh in load_meshes_from_hdf5(f, all_meshes_to_load)
         }
 
         self.base_mesh_name = base_mesh_name_str
