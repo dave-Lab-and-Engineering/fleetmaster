@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 import trimesh.transformations as tf
 
-# Imports needed for database generation
 from fleetmaster import FleetMaster
 from fleetmaster.core.engine import run_simulation_batch
 from fleetmaster.core.settings import MeshConfig, SimulationSettings
@@ -107,7 +106,7 @@ TEST_CASES = [
         [0.0, 0.0, 0.0],
         0.0,
         "boxship_t_1_r_00_00_00",
-        lambda dist: dist < 0.41,
+        0.0,
     ),
     (
         "Case 2: Match with irrelevant translation/rotation noise (draft 1.0)",
@@ -115,7 +114,7 @@ TEST_CASES = [
         [0.0, 0.0, 15.0],
         0.0,
         "boxship_t_1_r_00_00_00",
-        lambda dist: dist < 0.41,
+        0.0,
     ),
     (
         "Case 3: Different match due to significant rotation deviation (draft 1.0)",
@@ -123,7 +122,7 @@ TEST_CASES = [
         [23.0, 19.0, 15.0],
         0.0,
         "boxship_t_1_r_20_20_00",
-        lambda dist: 0.41 < dist < 0.5,
+        0.0,
     ),
     (
         "Case 4: Exact Match for draft 2.0",
@@ -131,7 +130,7 @@ TEST_CASES = [
         [0.0, 0.0, 0.0],
         0.0,
         "boxship_t_2_r_00_00_00",
-        lambda dist: dist < 0.1,
+        0.0,
     ),
     (
         "Case 5: Exact Match for draft 2.0 with irrelevant xy-plane and yaw deviation",
@@ -139,7 +138,7 @@ TEST_CASES = [
         [0.0, 0.0, 15.0],
         0.0,
         "boxship_t_2_r_00_00_00",
-        lambda dist: dist < 0.1,
+        0.0,
     ),
     (
         "Case 6: Match for draft 2.0 with noise in all axes",
@@ -147,13 +146,13 @@ TEST_CASES = [
         [4.0, -1.0, 15.0],
         0.0,
         "boxship_t_2_r_00_00_00",
-        lambda dist: 0.1 < dist < 0.2,
+        0.16944,
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    "description, target_translation, target_rotation, water_level, expected_match, distance_check",
+    "description, target_translation, target_rotation, water_level, expected_match, expected_distance",
     TEST_CASES,
     ids=[case[0] for case in TEST_CASES],
 )
@@ -164,7 +163,7 @@ def test_fleetmaster_fitting(
     target_rotation: list[float],
     water_level: float,
     expected_match: str,
-    distance_check,
+    expected_distance: float,
 ):
     """Tests the FleetMaster mesh fitting with various scenarios."""
     logger.info(f"Running test: {description}")
@@ -186,4 +185,9 @@ def test_fleetmaster_fitting(
 
     assert best_match is not None, "A best match should have been found."
     assert best_match == expected_match
-    assert distance_check(distance), f"Distance check failed for {description}. Got distance: {distance}"
+    np.testing.assert_almost_equal(
+        distance,
+        expected_distance,
+        decimal=5,
+        err_msg=f"Distance check failed for {description}. Got distance: {distance}, expected: {expected_distance}.",
+    )
