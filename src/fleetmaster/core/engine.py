@@ -37,7 +37,7 @@ class EngineMesh:
         return EngineMesh(
             name=self.name,
             mesh=self.mesh.copy(),
-            config=self.config.copy(deep=True),
+            config=self.config.model_copy(deep=True),
         )
 
 
