@@ -1,5 +1,6 @@
 import io
 import logging
+from typing import Any
 
 import h5py
 import trimesh
@@ -8,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_meshes_from_hdf5(
-    h5_file: h5py.File,
+    h5_file: Any,
     mesh_names: list[str],
 ) -> list[trimesh.Trimesh]:
     """Load and return trimesh objects for the given names from an opened HDF5 file."""
