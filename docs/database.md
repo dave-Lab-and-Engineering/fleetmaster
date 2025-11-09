@@ -6,9 +6,7 @@ Fleetmaster is used to generate an HDF5 database containing a collection of Capy
 
 ## Mesh definitions
 
-Each HDF5 database is built around a single **base mesh**. This base mesh serves as the fundamental reference geometry. 
-
-
+Each HDF5 database is built around a single **base mesh**. This base mesh serves as the fundamental reference geometry.
 
 ![image-20251104162052926](./image-20251104162052926.png)
 
@@ -16,15 +14,13 @@ On this base-mesh we define a base_origin_position. If the STL was provided usin
 
 It is highly recommended to textually describe which point on the vessel the base-origin defines. In the example above this could be "Aft perpendicular, keel, centerline".
 
-
-
-**On the base-mesh, we** 
+**On the base-mesh, we**
 
 **The origin of the base-mesh should correspond to a known point POINT ON THE VESSEL.**
 
 **The scale of the mesh should be meters**
 
-**The origin of the mesh, as well as the axis definition, shall be documented as text.** 
+**The origin of the mesh, as well as the axis definition, shall be documented as text.**
 
 **Recommendation:**
 
@@ -33,9 +29,7 @@ It is highly recommended to textually describe which point on the vessel the bas
 - **Y towards PS**
 - **Z upwards**
 
-
-
- point when you position the mesh in a global context. The name of this base mesh is stored as a root-level attribute named `base_mesh` in the HDF5 file. The geometry of the base mesh itself is stored as a dataset within the `/meshes` group.
+point when you position the mesh in a global context. The name of this base mesh is stored as a root-level attribute named `base_mesh` in the HDF5 file. The geometry of the base mesh itself is stored as a dataset within the `/meshes` group.
 
 In addition to the base mesh, the `/meshes` group can contain multiple **candidate meshes**. Each candidate mesh represents a variation of the base mesh and has the following characteristics:
 
