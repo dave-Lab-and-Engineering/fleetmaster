@@ -61,7 +61,7 @@ def _run_and_print_test_case(
             print(f"   - Successfully retrieved Hyddb1 object with {hyddb.n_frequencies} frequencies.")
             # Demonstrate saving the hyddb1 object
             try:
-                hyd_filename = HERE / f"{output_filename}.dhyd"
+                hyd_filename = (HERE / f"{output_filename}").with_suffix(".dhyd")
                 # hyddb.to_hyd_file(str(hyd_filename))
                 hyddb.save_as(str(hyd_filename))
                 print(f"   - Saved Hyddb1 object to '{hyd_filename}'")
