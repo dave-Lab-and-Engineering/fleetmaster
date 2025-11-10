@@ -950,7 +950,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.8" },
     { name = "h5netcdf", specifier = ">=1.7.0" },
     { name = "h5py", specifier = ">=3.15.0" },
-    { name = "mafredo", git = "https://github.com/eelcovv/mafredo.git" },
+    { name = "mafredo", specifier = ">=2025.4.0" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "pyglet", specifier = "<2" },
@@ -1525,17 +1525,21 @@ wheels = [
 
 [[package]]
 name = "mafredo"
-version = "0.0.post124+g6c1c4ab95"
-source = { git = "https://github.com/eelcovv/mafredo.git#6c1c4ab953bd80b66613e8e7fafaeeff07ee69eb" }
+version = "2025.4.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "capytaine" },
+    { name = "h5netcdf" },
     { name = "matplotlib" },
-    { name = "netcdf4" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyyaml" },
     { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "xarray", version = "2025.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ab/3a/f37f5e36a64727a05c78b8f243967cd8bef27ab888225d57c7b6493c8b4b/mafredo-2025.4.0.tar.gz", hash = "sha256:b1c4d07bde57f71690e8e70264ae767423ca452d22269140944f2be055684652", size = 1734230, upload-time = "2025-11-10T10:23:35.236Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/7e/b2f57475b9d56bea94663eae6182230d945806ead21a3e50ec671c788fd8/mafredo-2025.4.0-py3-none-any.whl", hash = "sha256:4a52429047fc396e2208e695b7208bee42388b3ee067c07d110fb8aaa243c50f", size = 30342, upload-time = "2025-11-10T10:23:33.022Z" },
 ]
 
 [[package]]

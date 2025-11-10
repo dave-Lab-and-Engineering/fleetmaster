@@ -111,32 +111,38 @@ docs:
 # ---------------------------------------
 # Examples
 # ---------------------------------------
-# Generate the example meshes. Requires pymeshup to be installed
+# Generate all the example meshes. Requires pymeshup to be installed
 generate-all: install-pymeshup generate-box-mesh-full generate-box-mesh-half generate-ship-rotation
 
+# Generate the full example meshes. Requires pymeshup to be installed
 generate-box-mesh-full:
     @uv run python examples/defraction_box.py --output-dir examples --file-base defraction_box_full; exit 0
+# Generate the half example meshes. Requires pymeshup to be installed
 generate-box-mesh-half:
     @uv run python examples/defraction_box.py --output-dir examples --file-base defraction_box_half --grid-symmetry; exit 0
+# Generate the ship example meshes. Requires pymeshup to be installed
 generate-ship-rotation:
     @uv run python examples/defraction_box.py --output-dir examples --file-base boxship --only-base; exit 0
 
-# Run fleetmaster examples to demonstrate generation
+# Run all the fleetmaster examples, including mesh generation
 fleetmaster-all: fleetmaster-full fleetmaster-half fleetmaster-rotation fitting-example fitting-example-hyd
+# Run fleetmaster examples for full mesh
 fleetmaster-full: generate-box-mesh-full
     @fleetmaster -v run --settings-file examples/settings_full.yml --lid; exit 0
+# Run fleetmaster examples for half mesh
 fleetmaster-half: generate-box-mesh-half
     @fleetmaster -v run --settings-file examples/settings_half.yml; exit 0
+# Run fleetmaster examples for ship with rotation and translation
 fleetmaster-rotation: generate-ship-rotation
     @fleetmaster -v run --settings-file examples/settings_rotations.yml; exit 0
 
+# Run the standalone fitting example for generating the database
 fitting-example:
     @uv run python examples/fitting_example.py
 
+# Run the standalone fitting example for using the database
 fitting-example-hyd:
     @uv run python examples/fleetmaster_fit.py
-
-
 
 # clean examples directory
 clean-examples: clean-examples-stl clean-examples-hdf5 clean-examples-hyd clean-examples-nc

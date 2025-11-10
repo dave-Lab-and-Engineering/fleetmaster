@@ -35,7 +35,7 @@ dependencies = [
     "trimesh>=4.8.3",
     "vtk>=9.3",
     "xarray>=2025.6.1",
-    "mafredo @ git+https://github.com/eelcovv/mafredo.git",
+    "mafredo>=2025.4.0",
 ]
 
 [project.optional-dependencies]
