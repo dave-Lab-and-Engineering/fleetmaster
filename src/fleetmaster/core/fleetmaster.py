@@ -16,12 +16,14 @@ import trimesh.transformations as tf
 import xarray as xr
 from mafredo import Hyddb1
 
+# activate only after mafredo has been released with h5netcdf support
+# from mafredo import Hyddb1, create_hyd_from_capytaine_data
 from .engine import (
     MESH_GROUP_NAME,
     EngineMesh,
     _apply_mesh_translation_and_rotation,
     _prepare_capytaine_body,
-    create_hyd_from_capytaine_data,
+    create_hyd_from_capytaine_data,  # remove after mafredo release
     load_meshes_from_hdf5,
 )
 from .exceptions import BaseMeshIsNoneError, DatabaseFileNotFoundError, HDF5AttributeError, MeshLoadError
@@ -30,7 +32,7 @@ from .settings import MeshConfig
 
 logger = logging.getLogger(__name__)
 
-HyddbResult = tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]
+HyddbResult = tuple[Hyddb1 | None, tuple[float, float, float] | None, float | None, float | None]
 
 
 class FleetMaster:
@@ -254,7 +256,7 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1 | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
 
         # Extract data from the hydro_data dictionary, which comes from the HDF5 file
