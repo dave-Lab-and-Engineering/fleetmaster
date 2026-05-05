@@ -1,0 +1,28 @@
+# Minimal single-case example for Fleetmaster
+#
+# Goal:
+# - Run one mesh in one single simulation case
+# - Keep normal HDF5 output
+# - Also export one standalone Capytaine-style NetCDF file
+
+base_mesh: "boxship.stl"
+base_origin: [0.0, 0.0, 1.5]
+
+output_hdf5_file: "single_case.hdf5"
+output_netcdf_file: "single_case.nc"
+
+grid_symmetry: false
+lid: false
+
+stl_files:
+  - file: "boxship_t_1_r_00_00_00.stl"
+    translation: [0.0, 0.0, -1.0]
+    rotation: [0.0, 0.0, 0.0]
+    cog: [0.0, 0.0, 0.0]
+
+# Single-case values (required for output_netcdf_file)
+wave_periods: [8.0]
+wave_directions: [0.0]
+water_depth: inf
+water_level: 0.0
+forward_speed: 0.0

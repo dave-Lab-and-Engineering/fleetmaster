@@ -14,14 +14,14 @@
 # The base mesh is L x W x H = 3 x 2 x 3
 base_mesh: "defraction_box_half.stl"
 # The origin in the local coordinate system of the base mesh
-base_origin: [0, 0.0, 1.5]
+base_origin: [0, 0.0, 0.0]
 
 output_hdf5_file: defraction_box_half.hdf5
 grid_symmetry: true
 
 stl_files:
   - file: "defraction_box_half_1m.stl"
-    translation: [0.0, 0.0, -1.0]
+    translation: [0.0, 0.0, -0.791]
     # this puts the cog in the centre at the water level
     cog: [0.0, 0.0, 0.0]
     # This mesh will use the global wave_periods and wave_directions.

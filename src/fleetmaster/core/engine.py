@@ -418,6 +418,56 @@ def _generate_case_group_name(mesh_name: str, water_depth: float, water_level: f
     return f"{mesh_name}_wd_{wd}_wl_{wl}_fs_{fs}"
 
 
+def _is_single_value(value: float | list[float]) -> bool:
+    """Returns True when a setting contains exactly one numeric value."""
+    return not isinstance(value, list) or len(value) == 1
+
+
+def _validate_single_case_netcdf_export(settings: SimulationSettings, mesh_count: int) -> None:
+    """Validates that NetCDF export is only requested for one mesh and one case."""
+    if settings.output_netcdf_file is None:
+        return
+
+    if mesh_count != 1:
+        msg = "'output_netcdf_file' requires exactly one mesh in 'stl_files'."
+        raise ValueError(msg)
+
+    if settings.drafts:
+        msg = "'output_netcdf_file' is not supported together with 'drafts'."
+        raise ValueError(msg)
+
+    if not _is_single_value(settings.water_depth):
+        msg = "'output_netcdf_file' requires a single 'water_depth' value."
+        raise ValueError(msg)
+    if not _is_single_value(settings.water_level):
+        msg = "'output_netcdf_file' requires a single 'water_level' value."
+        raise ValueError(msg)
+    if not _is_single_value(settings.forward_speed):
+        msg = "'output_netcdf_file' requires a single 'forward_speed' value."
+        raise ValueError(msg)
+
+
+def _write_case_to_netcdf(database: xr.Dataset, netcdf_file: Path, mesh_name: str) -> None:
+    """Writes one case to a standalone NetCDF file in Capytaine-style layout."""
+    from capytaine.io.xarray import separate_complex_values
+
+    standalone = separate_complex_values(database)
+    standalone.attrs["stl_mesh_name"] = mesh_name
+
+    for var_name in standalone.variables:
+        if hasattr(standalone[var_name].dtype, "name") and standalone[var_name].dtype.name == "category":
+            standalone[var_name] = standalone[var_name].astype(str)
+
+    encoding: dict[str, dict[str, str]] = {}
+    for coord_name in ("radiating_dof", "influenced_dof"):
+        if coord_name in standalone:
+            standalone[coord_name] = standalone[coord_name].astype("U")
+            encoding[coord_name] = {"dtype": "U"}
+
+    netcdf_file.parent.mkdir(parents=True, exist_ok=True)
+    standalone.to_netcdf(netcdf_file, mode="w", encoding=encoding or None)
+
+
 def _load_or_generate_mesh(mesh_name: str, mesh_config: MeshConfig, settings: SimulationSettings) -> trimesh.Trimesh:
     """
     Load a mesh from an STL file and apply transformations, or generate it if it doesn't exist.
@@ -604,6 +654,7 @@ def _run_pipeline_for_mesh(
         output_file=output_file,
         update_cases=settings.update_cases,
         combine_cases=settings.combine_cases,
+        output_netcdf_file=Path(settings.output_netcdf_file) if settings.output_netcdf_file else None,
         origin_translation=origin_translation,
     )
 
@@ -613,6 +664,7 @@ def _process_and_save_single_case(
     mesh_name: str,
     case_params: dict[str, Any],
     output_file: Path,
+    output_netcdf_file: Path | None,
     origin_translation: npt.NDArray[np.float64] | None,
 ) -> Any:
     """Process a single simulation case and save its results to the HDF5 file."""
@@ -660,6 +712,10 @@ def _process_and_save_single_case(
             database.attrs["cog_for_calculation"] = boat.center_of_mass
         database.to_netcdf(output_file, mode="a", group=group_name, engine="h5netcdf")
 
+    if output_netcdf_file is not None:
+        logger.info(f"Writing standalone NetCDF file: {output_netcdf_file}")
+        _write_case_to_netcdf(database, output_netcdf_file, mesh_name)
+
     logger.debug(f"Successfully wrote data for case to group {group_name}.")
     return database
 
@@ -676,6 +732,7 @@ def process_all_cases_for_one_stl(
     output_file: Path,
     update_cases: bool = False,
     combine_cases: bool = False,
+    output_netcdf_file: Path | None = None,
     origin_translation: npt.NDArray[np.float64] | None = None,
 ) -> None:
     # 1. Use the prepared (and possibly translated) geometry to create the Capytaine body
@@ -703,7 +760,14 @@ def process_all_cases_for_one_stl(
             "update_cases": update_cases,
             "combine_cases": combine_cases,
         }
-        result_db = _process_and_save_single_case(boat, engine_mesh.name, case_params, output_file, origin_translation)
+        result_db = _process_and_save_single_case(
+            boat,
+            engine_mesh.name,
+            case_params,
+            output_file,
+            output_netcdf_file,
+            origin_translation,
+        )
         if combine_cases and result_db is not None:
             all_datasets.append(result_db)
 
@@ -748,6 +812,7 @@ def run_simulation_batch(settings: SimulationSettings) -> None:
 
     # Determine the base mesh and the origin translation
     all_mesh_configs = [MeshConfig.model_validate(mc) for mc in settings.stl_files]
+    _validate_single_case_netcdf_export(settings, len(all_mesh_configs))
     all_files = [mc.file for mc in all_mesh_configs]
 
     origin_translation = np.array([0.0, 0.0, 0.0])

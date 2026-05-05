@@ -66,6 +66,13 @@ class SimulationSettings(BaseModel):
     stl_files: list[MeshConfig] = Field(description="A list of STL mesh files or mesh configurations.")
     output_directory: str | None = Field(default=None, description="Directory to save the output files.")
     output_hdf5_file: str = Field(default="results.hdf5", description="Path to the HDF5 output file.")
+    output_netcdf_file: str | None = Field(
+        default=None,
+        description=(
+            "Optional path for exporting a single-case Capytaine-style NetCDF file. "
+            "Only supported when exactly one mesh and one simulation case are configured."
+        ),
+    )
     wave_periods: float | list[float] = Field(default=[5.0, 10.0, 15.0, 20.0])
     wave_directions: float | list[float] = Field(default=[0.0, 45.0, 90.0, 135.0, 180.0])
     forward_speed: float | list[float] = 0.0

@@ -13,6 +13,7 @@ from fleetmaster.core.engine import (
     _process_single_stl,
     _run_pipeline_for_mesh,
     _setup_output_file,
+    _validate_single_case_netcdf_export,
     add_mesh_to_database,
     run_simulation_batch,
 )
@@ -194,6 +195,24 @@ def test_format_value_for_name(value, expected):
 def test_generate_case_group_name():
     name = _generate_case_group_name("mesh1", 100.0, -2.5, 5.0)
     assert name == "mesh1_wd_100_wl_-2.5_fs_5"
+
+
+def test_validate_single_case_netcdf_export_ok(mock_settings):
+    mock_settings.output_netcdf_file = "single_case.nc"
+    _validate_single_case_netcdf_export(mock_settings, mesh_count=1)
+
+
+def test_validate_single_case_netcdf_export_fails_with_multiple_meshes(mock_settings):
+    mock_settings.output_netcdf_file = "single_case.nc"
+    with pytest.raises(ValueError, match="exactly one mesh"):
+        _validate_single_case_netcdf_export(mock_settings, mesh_count=2)
+
+
+def test_validate_single_case_netcdf_export_fails_with_multiple_case_values(mock_settings):
+    mock_settings.output_netcdf_file = "single_case.nc"
+    mock_settings.forward_speed = [0.0, 1.0]
+    with pytest.raises(ValueError, match="single 'forward_speed'"):
+        _validate_single_case_netcdf_export(mock_settings, mesh_count=1)
 
 
 @patch("fleetmaster.core.engine._run_pipeline_for_mesh")
