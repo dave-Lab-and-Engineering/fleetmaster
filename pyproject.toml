@@ -61,9 +61,7 @@ dev = [
     "mkdocs-caption>=1.3.0",
     "pytest-regressions>=2.8.3",
 ]
-pymeshup = [
-    "pymeshup>=25.10.17",
-]
+pymeshup = ["pymeshup>=25.10.17"]
 
 [project.urls]
 Homepage = "https://dave-Lab-and-Engineering.github.io/fleetmaster/"
@@ -225,9 +223,7 @@ skip_empty = true
 [tool.coverage.run]
 branch = true
 source = ["src"]
-omit = [
-    "tests/*",
-]
+omit = ["tests/*"]
 
 
 # ========================================================================================
