@@ -1,9 +1,11 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import h5py
 import numpy as np
 import pytest
 import trimesh
+import xarray as xr
 
 from fleetmaster.core.engine import (
     EngineMesh,
@@ -15,6 +17,8 @@ from fleetmaster.core.engine import (
     _setup_output_file,
     _validate_single_case_netcdf_export,
     add_mesh_to_database,
+    export_hdf5_case_to_netcdf,
+    list_case_groups_in_hdf5,
     run_simulation_batch,
 )
 from fleetmaster.core.exceptions import LidAndSymmetryEnabledError
@@ -213,6 +217,42 @@ def test_validate_single_case_netcdf_export_fails_with_multiple_case_values(mock
     mock_settings.forward_speed = [0.0, 1.0]
     with pytest.raises(ValueError, match="single 'forward_speed'"):
         _validate_single_case_netcdf_export(mock_settings, mesh_count=1)
+
+
+def test_list_case_groups_in_hdf5(tmp_path: Path):
+    hdf5_path = tmp_path / "db.hdf5"
+    with h5py.File(hdf5_path, "w") as f:
+        f.create_group("meshes")
+        f.create_group("case_b")
+        f.create_group("case_a")
+
+    assert list_case_groups_in_hdf5(hdf5_path) == ["case_a", "case_b"]
+
+
+def test_export_hdf5_case_to_netcdf(tmp_path: Path):
+    hdf5_path = tmp_path / "db.hdf5"
+    output_nc = tmp_path / "case.nc"
+
+    dataset = xr.Dataset(
+        data_vars={
+            "added_mass": (
+                ("omega", "radiating_dof", "influenced_dof"),
+                np.ones((1, 1, 1), dtype=float),
+            )
+        },
+        coords={
+            "omega": [1.0],
+            "radiating_dof": ["Heave"],
+            "influenced_dof": ["Heave"],
+        },
+    )
+    dataset.attrs["stl_mesh_name"] = "test_mesh"
+    dataset.to_netcdf(hdf5_path, mode="w", group="test_case", engine="h5netcdf")
+
+    result_path = export_hdf5_case_to_netcdf(hdf5_path, "test_case", output_nc)
+
+    assert result_path == output_nc
+    assert output_nc.exists()
 
 
 @patch("fleetmaster.core.engine._run_pipeline_for_mesh")

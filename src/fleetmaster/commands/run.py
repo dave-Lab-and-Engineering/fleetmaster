@@ -175,23 +175,12 @@ def _parse_yaml_ranges(config: dict[str, Any]) -> None:
                 config[key] = parsed_range
 
 
-def _resolve_paths_in_config(config: dict[str, Any], settings_dir: Path) -> None:
-    """Resolves relative paths for 'base_mesh' and 'stl_files' in the config."""
-    # Resolve base_mesh path
-    if config.get("base_mesh") and not Path(config["base_mesh"]).is_absolute():
-        config["base_mesh"] = str((settings_dir / config["base_mesh"]).resolve())
-
-    # Resolve stl_files paths
-    if "stl_files" not in config:
-        return
-
+def _resolve_stl_files_paths(stl_items: list[Any], settings_dir: Path) -> list[Any]:
+    """Resolves relative STL paths to absolute paths for all supported stl_files item formats."""
     resolved_files: list[Any] = []
-    for item in config["stl_files"]:
+    for item in stl_items:
         if isinstance(item, str):
-            if not Path(item).is_absolute():
-                resolved_files.append(str((settings_dir / item).resolve()))
-            else:
-                resolved_files.append(item)
+            resolved_files.append(str((settings_dir / item).resolve()) if not Path(item).is_absolute() else item)
         elif isinstance(item, dict) and "file" in item:
             if not Path(item["file"]).is_absolute():
                 item["file"] = str((settings_dir / item["file"]).resolve())
@@ -202,7 +191,24 @@ def _resolve_paths_in_config(config: dict[str, Any], settings_dir: Path) -> None
             resolved_files.append(item)
         else:
             resolved_files.append(item)
-    config["stl_files"] = resolved_files
+    return resolved_files
+
+
+def _resolve_paths_in_config(config: dict[str, Any], settings_dir: Path) -> None:
+    """Resolves relative paths for 'base_mesh' and 'stl_files' in the config."""
+    # Resolve base_mesh path
+    if config.get("base_mesh") and not Path(config["base_mesh"]).is_absolute():
+        config["base_mesh"] = str((settings_dir / config["base_mesh"]).resolve())
+
+    # Resolve optional output_netcdf_file path
+    if config.get("output_netcdf_file") and not Path(config["output_netcdf_file"]).is_absolute():
+        config["output_netcdf_file"] = str((settings_dir / config["output_netcdf_file"]).resolve())
+
+    # Resolve stl_files paths
+    if "stl_files" not in config:
+        return
+
+    config["stl_files"] = _resolve_stl_files_paths(config["stl_files"], settings_dir)
 
 
 def _load_config(settings_file: str | None, cli_args: dict[str, Any]) -> dict[str, Any]:

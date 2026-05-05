@@ -468,6 +468,55 @@ def _write_case_to_netcdf(database: xr.Dataset, netcdf_file: Path, mesh_name: st
     standalone.to_netcdf(netcdf_file, mode="w", encoding=encoding or None)
 
 
+def list_case_groups_in_hdf5(hdf5_file: str | Path) -> list[str]:
+    """Lists all simulation case groups in an HDF5 database (excluding the meshes group)."""
+    hdf5_path = Path(hdf5_file)
+    if not hdf5_path.exists():
+        msg = f"HDF5 database not found: {hdf5_path}"
+        raise FileNotFoundError(msg)
+
+    with h5py.File(hdf5_path, "r") as f:
+        return sorted(name for name in f if name != MESH_GROUP_NAME)
+
+
+def export_hdf5_case_to_netcdf(
+    hdf5_file: str | Path,
+    case_group: str,
+    output_netcdf_file: str | Path,
+    *,
+    overwrite: bool = False,
+) -> Path:
+    """Exports one simulation case group from the Fleetmaster HDF5 database to a standalone NetCDF file."""
+    hdf5_path = Path(hdf5_file)
+    output_path = Path(output_netcdf_file)
+
+    if not hdf5_path.exists():
+        msg = f"HDF5 database not found: {hdf5_path}"
+        raise FileNotFoundError(msg)
+
+    if output_path.exists() and not overwrite:
+        msg = f"Output NetCDF file already exists: {output_path}. Use --overwrite to replace it."
+        raise FileExistsError(msg)
+
+    with h5py.File(hdf5_path, "r") as f:
+        if case_group not in f:
+            available = sorted(name for name in f if name != MESH_GROUP_NAME)
+            msg = (
+                f"Case group '{case_group}' not found in {hdf5_path}. "
+                f"Available cases: {available if available else 'none'}"
+            )
+            raise ValueError(msg)
+
+    dataset = xr.open_dataset(hdf5_path, group=case_group, engine="h5netcdf")
+    try:
+        mesh_name = str(dataset.attrs.get("stl_mesh_name", case_group))
+        _write_case_to_netcdf(dataset.load(), output_path, mesh_name)
+    finally:
+        dataset.close()
+
+    return output_path
+
+
 def _load_or_generate_mesh(mesh_name: str, mesh_config: MeshConfig, settings: SimulationSettings) -> trimesh.Trimesh:
     """
     Load a mesh from an STL file and apply transformations, or generate it if it doesn't exist.

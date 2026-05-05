@@ -19,7 +19,7 @@ import click
 from rich.logging import RichHandler
 
 from . import __version__
-from .commands import gui, list_command, run, view
+from .commands import export_nc, gui, list_command, run, view
 from .logging_setup import setup_general_logger
 
 logger = setup_general_logger()
@@ -89,6 +89,7 @@ def cli(verbose: int) -> None:
 
 
 cli.add_command(run, name="run")
+cli.add_command(export_nc, name="export-nc")
 cli.add_command(gui, name="gui")
 cli.add_command(list_command, name="list")
 cli.add_command(view, name="view")

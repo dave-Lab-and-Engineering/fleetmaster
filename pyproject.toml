@@ -131,6 +131,10 @@ module = "mafredo.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "mafredo"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "numpy.*"
 ignore_missing_imports = true
 
