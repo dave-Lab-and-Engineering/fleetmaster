@@ -13,11 +13,14 @@ from fleetmaster.core.engine import (
     _generate_case_group_name,
     _prepare_capytaine_body,
     _process_single_stl,
+    _resolve_bulk_output_dhyd_path,
+    _resolve_output_dhyd_path,
     _run_pipeline_for_mesh,
     _setup_output_file,
-    _validate_single_case_netcdf_export,
+    _validate_single_case_dhyd_export,
     add_mesh_to_database,
-    export_hdf5_case_to_netcdf,
+    export_hdf5_case_to_dhyd,
+    export_hdf5_cases_to_dhyd,
     list_case_groups_in_hdf5,
     run_simulation_batch,
 )
@@ -201,22 +204,72 @@ def test_generate_case_group_name():
     assert name == "mesh1_wd_100_wl_-2.5_fs_5"
 
 
-def test_validate_single_case_netcdf_export_ok(mock_settings):
-    mock_settings.output_netcdf_file = "single_case.nc"
-    _validate_single_case_netcdf_export(mock_settings, mesh_count=1)
+def test_validate_single_case_dhyd_export_ok(mock_settings):
+    mock_settings.output_dhyd_file = "single_case.dhyd"
+    _validate_single_case_dhyd_export(mock_settings, mesh_count=1)
 
 
-def test_validate_single_case_netcdf_export_fails_with_multiple_meshes(mock_settings):
-    mock_settings.output_netcdf_file = "single_case.nc"
-    with pytest.raises(ValueError, match="exactly one mesh"):
-        _validate_single_case_netcdf_export(mock_settings, mesh_count=2)
+def test_validate_single_case_dhyd_export_ok_with_auto_export(mock_settings):
+    mock_settings.export_to_hyd = True
+    _validate_single_case_dhyd_export(mock_settings, mesh_count=1)
 
 
-def test_validate_single_case_netcdf_export_fails_with_multiple_case_values(mock_settings):
-    mock_settings.output_netcdf_file = "single_case.nc"
+def test_validate_single_case_dhyd_export_fails_with_multiple_meshes(mock_settings):
+    mock_settings.output_dhyd_file = "single_case.dhyd"
+    _validate_single_case_dhyd_export(mock_settings, mesh_count=2)
+
+
+def test_validate_single_case_dhyd_export_fails_with_multiple_case_values(mock_settings):
+    mock_settings.output_dhyd_file = "single_case.dhyd"
     mock_settings.forward_speed = [0.0, 1.0]
-    with pytest.raises(ValueError, match="single 'forward_speed'"):
-        _validate_single_case_netcdf_export(mock_settings, mesh_count=1)
+    _validate_single_case_dhyd_export(mock_settings, mesh_count=1)
+
+
+def test_resolve_output_dhyd_path_uses_explicit_filename(tmp_path: Path):
+    output_file = tmp_path / "results.hdf5"
+    explicit_output = tmp_path / "custom_name.dhyd"
+
+    assert _resolve_output_dhyd_path(output_file, "case_a", explicit_output, False) == explicit_output
+
+
+def test_resolve_output_dhyd_path_uses_explicit_filename_as_base_for_multiple_cases(tmp_path: Path):
+    output_file = tmp_path / "results.hdf5"
+    explicit_output = tmp_path / "custom_name.dhyd"
+
+    assert (
+        _resolve_output_dhyd_path(output_file, "case_a", explicit_output, True) == tmp_path / "custom_name_case_a.dhyd"
+    )
+
+
+def test_resolve_output_dhyd_path_generates_case_name(tmp_path: Path):
+    output_file = tmp_path / "results.hdf5"
+
+    assert _resolve_output_dhyd_path(output_file, "case_a", None, True) == tmp_path / "case_a.dhyd"
+
+
+def test_resolve_bulk_output_dhyd_path_with_explicit_filename_for_multiple_cases(tmp_path: Path):
+    hdf5_path = tmp_path / "results.hdf5"
+    explicit_output = tmp_path / "exports.dhyd"
+
+    assert (
+        _resolve_bulk_output_dhyd_path(hdf5_path, "case_a", explicit_output, True) == tmp_path / "exports_case_a.dhyd"
+    )
+
+
+@patch("fleetmaster.core.engine.export_hdf5_case_to_dhyd")
+def test_export_hdf5_cases_to_dhyd_exports_all_cases(mock_export_case: MagicMock, tmp_path: Path):
+    hdf5_path = tmp_path / "db.hdf5"
+    with h5py.File(hdf5_path, "w") as f:
+        f.create_group("meshes")
+        f.create_group("case_b")
+        f.create_group("case_a")
+
+    mock_export_case.side_effect = [tmp_path / "case_a.dhyd", tmp_path / "case_b.dhyd"]
+
+    result = export_hdf5_cases_to_dhyd(hdf5_path)
+
+    assert result == [tmp_path / "case_a.dhyd", tmp_path / "case_b.dhyd"]
+    assert mock_export_case.call_count == 2
 
 
 def test_list_case_groups_in_hdf5(tmp_path: Path):
@@ -229,9 +282,10 @@ def test_list_case_groups_in_hdf5(tmp_path: Path):
     assert list_case_groups_in_hdf5(hdf5_path) == ["case_a", "case_b"]
 
 
-def test_export_hdf5_case_to_netcdf(tmp_path: Path):
+@patch("fleetmaster.core.engine.create_hyd_from_capytaine_data")
+def test_export_hdf5_case_to_dhyd(mock_create_hyd: MagicMock, tmp_path: Path):
     hdf5_path = tmp_path / "db.hdf5"
-    output_nc = tmp_path / "case.nc"
+    output_dhyd = tmp_path / "case.dhyd"
 
     dataset = xr.Dataset(
         data_vars={
@@ -249,10 +303,13 @@ def test_export_hdf5_case_to_netcdf(tmp_path: Path):
     dataset.attrs["stl_mesh_name"] = "test_mesh"
     dataset.to_netcdf(hdf5_path, mode="w", group="test_case", engine="h5netcdf")
 
-    result_path = export_hdf5_case_to_netcdf(hdf5_path, "test_case", output_nc)
+    mock_hyd = MagicMock()
+    mock_create_hyd.return_value = mock_hyd
 
-    assert result_path == output_nc
-    assert output_nc.exists()
+    result_path = export_hdf5_case_to_dhyd(hdf5_path, "test_case", output_dhyd)
+
+    assert result_path == output_dhyd
+    mock_hyd.save_as.assert_called_once_with(output_dhyd)
 
 
 @patch("fleetmaster.core.engine._run_pipeline_for_mesh")

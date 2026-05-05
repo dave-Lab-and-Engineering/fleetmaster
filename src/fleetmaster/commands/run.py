@@ -200,9 +200,9 @@ def _resolve_paths_in_config(config: dict[str, Any], settings_dir: Path) -> None
     if config.get("base_mesh") and not Path(config["base_mesh"]).is_absolute():
         config["base_mesh"] = str((settings_dir / config["base_mesh"]).resolve())
 
-    # Resolve optional output_netcdf_file path
-    if config.get("output_netcdf_file") and not Path(config["output_netcdf_file"]).is_absolute():
-        config["output_netcdf_file"] = str((settings_dir / config["output_netcdf_file"]).resolve())
+    # Resolve optional standalone export paths
+    if config.get("output_dhyd_file") and not Path(config["output_dhyd_file"]).is_absolute():
+        config["output_dhyd_file"] = str((settings_dir / config["output_dhyd_file"]).resolve())
 
     # Resolve stl_files paths
     if "stl_files" not in config:

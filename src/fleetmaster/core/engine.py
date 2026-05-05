@@ -423,49 +423,52 @@ def _is_single_value(value: float | list[float]) -> bool:
     return not isinstance(value, list) or len(value) == 1
 
 
-def _validate_single_case_netcdf_export(settings: SimulationSettings, mesh_count: int) -> None:
-    """Validates that NetCDF export is only requested for one mesh and one case."""
-    if settings.output_netcdf_file is None:
-        return
-
-    if mesh_count != 1:
-        msg = "'output_netcdf_file' requires exactly one mesh in 'stl_files'."
-        raise ValueError(msg)
-
-    if settings.drafts:
-        msg = "'output_netcdf_file' is not supported together with 'drafts'."
-        raise ValueError(msg)
-
-    if not _is_single_value(settings.water_depth):
-        msg = "'output_netcdf_file' requires a single 'water_depth' value."
-        raise ValueError(msg)
-    if not _is_single_value(settings.water_level):
-        msg = "'output_netcdf_file' requires a single 'water_level' value."
-        raise ValueError(msg)
-    if not _is_single_value(settings.forward_speed):
-        msg = "'output_netcdf_file' requires a single 'forward_speed' value."
-        raise ValueError(msg)
+def _should_export_dhyd(settings: SimulationSettings) -> bool:
+    """Returns True when a standalone .dhyd file should be exported."""
+    return settings.export_to_hyd or settings.output_dhyd_file is not None
 
 
-def _write_case_to_netcdf(database: xr.Dataset, netcdf_file: Path, mesh_name: str) -> None:
-    """Writes one case to a standalone NetCDF file in Capytaine-style layout."""
-    from capytaine.io.xarray import separate_complex_values
+def _validate_single_case_dhyd_export(settings: SimulationSettings, mesh_count: int) -> None:
+    """Retained as a no-op for backward compatibility with existing tests/imports."""
+    del settings, mesh_count
 
-    standalone = separate_complex_values(database)
-    standalone.attrs["stl_mesh_name"] = mesh_name
 
-    for var_name in standalone.variables:
-        if hasattr(standalone[var_name].dtype, "name") and standalone[var_name].dtype.name == "category":
-            standalone[var_name] = standalone[var_name].astype(str)
+def _write_case_to_dhyd(database: xr.Dataset, dhyd_file: Path) -> None:
+    """Writes one case to a standalone mafredo hydrodynamic database (.dhyd)."""
+    hyddb = create_hyd_from_capytaine_data(database)
 
-    encoding: dict[str, dict[str, str]] = {}
-    for coord_name in ("radiating_dof", "influenced_dof"):
-        if coord_name in standalone:
-            standalone[coord_name] = standalone[coord_name].astype("U")
-            encoding[coord_name] = {"dtype": "U"}
+    dhyd_file.parent.mkdir(parents=True, exist_ok=True)
+    hyddb.save_as(dhyd_file)
 
-    netcdf_file.parent.mkdir(parents=True, exist_ok=True)
-    standalone.to_netcdf(netcdf_file, mode="w", encoding=encoding or None)
+
+def _resolve_output_dhyd_path(
+    output_file: Path, group_name: str, output_dhyd_file: Path | None, export_to_hyd: bool
+) -> Path | None:
+    """Resolves the .dhyd output path for a case."""
+    if output_dhyd_file is not None:
+        if export_to_hyd:
+            suffix = output_dhyd_file.suffix or ".dhyd"
+            return output_dhyd_file.with_name(f"{output_dhyd_file.stem}_{group_name}{suffix}")
+        return output_dhyd_file
+
+    if export_to_hyd:
+        return output_file.with_name(f"{group_name}.dhyd")
+
+    return None
+
+
+def _resolve_bulk_output_dhyd_path(
+    hdf5_file: Path, case_group: str, output_dhyd_file: Path | None, exporting_multiple_cases: bool
+) -> Path:
+    """Resolves the output path for exporting a case from an existing HDF5 database."""
+    if output_dhyd_file is None:
+        return hdf5_file.with_name(f"{hdf5_file.stem}_{case_group}.dhyd")
+
+    if exporting_multiple_cases:
+        suffix = output_dhyd_file.suffix or ".dhyd"
+        return output_dhyd_file.with_name(f"{output_dhyd_file.stem}_{case_group}{suffix}")
+
+    return output_dhyd_file
 
 
 def list_case_groups_in_hdf5(hdf5_file: str | Path) -> list[str]:
@@ -479,23 +482,23 @@ def list_case_groups_in_hdf5(hdf5_file: str | Path) -> list[str]:
         return sorted(name for name in f if name != MESH_GROUP_NAME)
 
 
-def export_hdf5_case_to_netcdf(
+def export_hdf5_case_to_dhyd(
     hdf5_file: str | Path,
     case_group: str,
-    output_netcdf_file: str | Path,
+    output_dhyd_file: str | Path,
     *,
     overwrite: bool = False,
 ) -> Path:
-    """Exports one simulation case group from the Fleetmaster HDF5 database to a standalone NetCDF file."""
+    """Exports one simulation case group from the Fleetmaster HDF5 database to a standalone .dhyd file."""
     hdf5_path = Path(hdf5_file)
-    output_path = Path(output_netcdf_file)
+    output_path = Path(output_dhyd_file)
 
     if not hdf5_path.exists():
         msg = f"HDF5 database not found: {hdf5_path}"
         raise FileNotFoundError(msg)
 
     if output_path.exists() and not overwrite:
-        msg = f"Output NetCDF file already exists: {output_path}. Use --overwrite to replace it."
+        msg = f"Output .dhyd file already exists: {output_path}. Use --overwrite to replace it."
         raise FileExistsError(msg)
 
     with h5py.File(hdf5_path, "r") as f:
@@ -509,12 +512,51 @@ def export_hdf5_case_to_netcdf(
 
     dataset = xr.open_dataset(hdf5_path, group=case_group, engine="h5netcdf")
     try:
-        mesh_name = str(dataset.attrs.get("stl_mesh_name", case_group))
-        _write_case_to_netcdf(dataset.load(), output_path, mesh_name)
+        _write_case_to_dhyd(dataset.load(), output_path)
     finally:
         dataset.close()
 
     return output_path
+
+
+def export_hdf5_cases_to_dhyd(
+    hdf5_file: str | Path,
+    case_groups: list[str] | None = None,
+    output_dhyd_file: str | Path | None = None,
+    *,
+    overwrite: bool = False,
+) -> list[Path]:
+    """Exports one or more simulation case groups from the Fleetmaster HDF5 database to standalone .dhyd files."""
+    hdf5_path = Path(hdf5_file)
+
+    if not hdf5_path.exists():
+        msg = f"HDF5 database not found: {hdf5_path}"
+        raise FileNotFoundError(msg)
+
+    available_cases = list_case_groups_in_hdf5(hdf5_path)
+    selected_cases = available_cases if case_groups is None else case_groups
+
+    missing_cases = [case for case in selected_cases if case not in available_cases]
+    if missing_cases:
+        msg = f"Case group(s) not found in {hdf5_path}: {missing_cases}. Available cases: {available_cases}"
+        raise ValueError(msg)
+
+    output_template = Path(output_dhyd_file) if output_dhyd_file is not None else None
+    exporting_multiple_cases = len(selected_cases) != 1
+    exported_paths: list[Path] = []
+
+    for case_group in selected_cases:
+        output_path = _resolve_bulk_output_dhyd_path(hdf5_path, case_group, output_template, exporting_multiple_cases)
+        exported_paths.append(
+            export_hdf5_case_to_dhyd(
+                hdf5_file=hdf5_path,
+                case_group=case_group,
+                output_dhyd_file=output_path,
+                overwrite=overwrite,
+            )
+        )
+
+    return exported_paths
 
 
 def _load_or_generate_mesh(mesh_name: str, mesh_config: MeshConfig, settings: SimulationSettings) -> trimesh.Trimesh:
@@ -703,7 +745,8 @@ def _run_pipeline_for_mesh(
         output_file=output_file,
         update_cases=settings.update_cases,
         combine_cases=settings.combine_cases,
-        output_netcdf_file=Path(settings.output_netcdf_file) if settings.output_netcdf_file else None,
+        output_dhyd_file=Path(settings.output_dhyd_file) if settings.output_dhyd_file else None,
+        export_to_hyd=settings.export_to_hyd,
         origin_translation=origin_translation,
     )
 
@@ -713,13 +756,15 @@ def _process_and_save_single_case(
     mesh_name: str,
     case_params: dict[str, Any],
     output_file: Path,
-    output_netcdf_file: Path | None,
+    output_dhyd_file: Path | None,
+    export_to_hyd: bool,
     origin_translation: npt.NDArray[np.float64] | None,
 ) -> Any:
     """Process a single simulation case and save its results to the HDF5 file."""
     group_name = _generate_case_group_name(
         mesh_name, case_params["water_depth"], case_params["water_level"], case_params["forward_speed"]
     )
+    resolved_output_dhyd_file = _resolve_output_dhyd_path(output_file, group_name, output_dhyd_file, export_to_hyd)
 
     with h5py.File(output_file, "a") as f:
         if group_name in f:
@@ -761,9 +806,9 @@ def _process_and_save_single_case(
             database.attrs["cog_for_calculation"] = boat.center_of_mass
         database.to_netcdf(output_file, mode="a", group=group_name, engine="h5netcdf")
 
-    if output_netcdf_file is not None:
-        logger.info(f"Writing standalone NetCDF file: {output_netcdf_file}")
-        _write_case_to_netcdf(database, output_netcdf_file, mesh_name)
+    if resolved_output_dhyd_file is not None:
+        logger.info(f"Writing standalone .dhyd file: {resolved_output_dhyd_file}")
+        _write_case_to_dhyd(database, resolved_output_dhyd_file)
 
     logger.debug(f"Successfully wrote data for case to group {group_name}.")
     return database
@@ -781,7 +826,8 @@ def process_all_cases_for_one_stl(
     output_file: Path,
     update_cases: bool = False,
     combine_cases: bool = False,
-    output_netcdf_file: Path | None = None,
+    output_dhyd_file: Path | None = None,
+    export_to_hyd: bool = False,
     origin_translation: npt.NDArray[np.float64] | None = None,
 ) -> None:
     # 1. Use the prepared (and possibly translated) geometry to create the Capytaine body
@@ -814,7 +860,8 @@ def process_all_cases_for_one_stl(
             engine_mesh.name,
             case_params,
             output_file,
-            output_netcdf_file,
+            output_dhyd_file,
+            export_to_hyd,
             origin_translation,
         )
         if combine_cases and result_db is not None:
@@ -861,7 +908,6 @@ def run_simulation_batch(settings: SimulationSettings) -> None:
 
     # Determine the base mesh and the origin translation
     all_mesh_configs = [MeshConfig.model_validate(mc) for mc in settings.stl_files]
-    _validate_single_case_netcdf_export(settings, len(all_mesh_configs))
     all_files = [mc.file for mc in all_mesh_configs]
 
     origin_translation = np.array([0.0, 0.0, 0.0])

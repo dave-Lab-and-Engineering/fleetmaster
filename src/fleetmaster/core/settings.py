@@ -66,11 +66,18 @@ class SimulationSettings(BaseModel):
     stl_files: list[MeshConfig] = Field(description="A list of STL mesh files or mesh configurations.")
     output_directory: str | None = Field(default=None, description="Directory to save the output files.")
     output_hdf5_file: str = Field(default="results.hdf5", description="Path to the HDF5 output file.")
-    output_netcdf_file: str | None = Field(
+    output_dhyd_file: str | None = Field(
         default=None,
         description=(
-            "Optional path for exporting a single-case Capytaine-style NetCDF file. "
+            "Optional path for exporting a single-case mafredo hydrodynamic database (.dhyd). "
             "Only supported when exactly one mesh and one simulation case are configured."
+        ),
+    )
+    export_to_hyd: bool = Field(
+        default=False,
+        description=(
+            "Export a standalone .dhyd file for a single configured case. If no output_dhyd_file is provided, "
+            "the filename is generated automatically from the case name."
         ),
     )
     wave_periods: float | list[float] = Field(default=[5.0, 10.0, 15.0, 20.0])
@@ -140,4 +147,5 @@ class SimulationSettings(BaseModel):
         """Validate that lid and grid_symmetry are not both enabled."""
         if self.lid and self.grid_symmetry:
             raise LidAndSymmetryEnabledError()
+
         return self
