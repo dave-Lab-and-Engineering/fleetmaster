@@ -90,6 +90,22 @@ class SimulationSettings(BaseModel):
         default=False, description="Combine all calculated cases for a single STL into one multi-dimensional dataset."
     )
 
+    @field_validator("wave_periods", "wave_directions", mode="before")
+    def parse_range_string(cls, v: Any) -> list[float]:
+        if isinstance(v, str):
+            try:
+                start, stop, step = map(float, v.split(":"))
+                return np.arange(start, stop, step).tolist()
+            except ValueError as e:
+                msg = f"Invalid range string format: {v}"
+                raise ValueError(msg) from e
+        if isinstance(v, (int, float)):
+            return [v]
+        if isinstance(v, list):
+            return v
+        msg = f"Unsupported type for wave_periods/wave_directions: {type(v)}"
+        raise TypeError(msg)
+
     @field_validator("stl_files", mode="before")
     def normalize_stl_files(cls, v: Any) -> Any:
         if not isinstance(v, list):

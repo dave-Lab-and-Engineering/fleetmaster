@@ -37,7 +37,7 @@ class EngineMesh:
         return EngineMesh(
             name=self.name,
             mesh=self.mesh.copy(),
-            config=self.config.copy(deep=True),
+            config=self.config.model_copy(deep=True),
         )
 
 
@@ -891,7 +891,7 @@ def run_simulation_batch(settings: SimulationSettings) -> None:
     logger.info(f"✅ Simulation batch finished. Results saved to {output_file}")
 
 
-def create_hyddb_from_capytaine_file(filename: Path | str) -> Any:
+def create_hyddb_from_capytaine_file(filename: str | Path) -> Any:
     """Loads hydrodynamic data from a  dataset produced with capytaine.
 
     - Wave forces,
@@ -938,7 +938,7 @@ def create_rao_from_capytaine_wave_force(dataset: xr.Dataset, mode: Any) -> Any:
     data for the requested mode into the object.
 
     Args:
-        filename: .nc file to read from
+        dataset: the xarray.Dataset read from the capytaine netCDF file
         mode: Name of the mode to read MotionMode
 
     Returns:

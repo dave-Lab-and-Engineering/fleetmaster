@@ -2,7 +2,17 @@
 
 ## Summary
 
-`fleetmaster` is a command-line tool designed to simplify running batch processes with [Capytaine](https://capytaine.github.io/), an open-source Python library for simulating wave-structure interactions. While Capytaine provides powerful tools for hydrodynamic analysis, `fleetmaster` streamlines the process of running multiple simulations with varying parameters, managing inputs, and organizing outputs. It acts as a wrapper, allowing users to define a fleet of simulations in a structured way and execute them with a single command.
+**Fleetmaster is a data-storage structure for hydrodynamic data such as produced by Capytaine.**
+
+**It allows multiple hydrodynamic databases to be stored together and provides methods for extracting the most suitable one.**
+
+**Intended use-case is the storage of hydrodynamic data for a single vessel but at different drafts, inclinations and/or forwards speeds.**
+
+**Fleetmaster includes convenience functions and command line tools for creating such datasets using capytaine.**
+
+`fleetmaster` is a command-line tool designed to simplify running batch processes with [Capytaine](https://capytaine.github.io/), an open-source Python library for simulating wave-structure interactions. While Capytaine provides powerful tools for hydrodynamic analysis, `fleetmaster` streamlines the process of running multiple simulations with varying parameters, managing inputs, and organizing outputs.
+
+It acts as a wrapper, allowing users to define a fleet of simulations in a structured way and execute them with a single command.
 
 ## Core Concepts
 
@@ -18,7 +28,23 @@ The solution for each mesh and set of simulation settings are stored in a databa
 
 ## Mesh Fitting
 
-In addition to running batch simulations, `fleetmaster` also provides a powerful mesh fitting capability. This feature allows you to find the best-matching mesh from a database of pre-calculated meshes based on a target transformation (translation and rotation). This is particularly useful for finding the most relevant hydrodynamic data for a specific loading condition without running a new simulation.
+In addition to running batch simulations, `fleetmaster` also provides a powerful mesh fitting capability. This feature allows you to find the best-matching mesh from a database of pre-calculated meshes based on a target transformation (translation and rotation). **= Draft, heel, trim**
+
+**Consider the following case:**
+
+**Target draft: 3m, target roll 0, target pitch 0**
+
+**Option1:**
+
+**draft 3m, pitch 1 degree, roll 0 degrees**
+
+**Option2:**
+
+**draft 2.8m, pitch 0 degrees, roll 0 degrees**
+
+**which one should we use?**
+
+This is particularly useful for finding the most relevant hydrodynamic data for a specific loading condition without running a new simulation.
 
 For more details, see the [Mesh Fitting](./fitting.md) documentation.
 

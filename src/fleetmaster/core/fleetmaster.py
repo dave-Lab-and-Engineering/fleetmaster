@@ -11,16 +11,19 @@ from typing import Any
 
 import h5py
 import numpy as np
+import trimesh
 import trimesh.transformations as tf
 import xarray as xr
 from mafredo import Hyddb1
 
+# activate only after mafredo has been released with h5netcdf support
+# from mafredo import Hyddb1, create_hyd_from_capytaine_data
 from .engine import (
     MESH_GROUP_NAME,
     EngineMesh,
     _apply_mesh_translation_and_rotation,
     _prepare_capytaine_body,
-    create_hyd_from_capytaine_data,
+    create_hyd_from_capytaine_data,  # remove after mafredo release
     load_meshes_from_hdf5,
 )
 from .exceptions import BaseMeshIsNoneError, DatabaseFileNotFoundError, HDF5AttributeError, MeshLoadError
@@ -29,7 +32,7 @@ from .settings import MeshConfig
 
 logger = logging.getLogger(__name__)
 
-HyddbResult = tuple[Any | None, tuple[float, float, float] | None, float | None, float | None]
+HyddbResult = tuple[Hyddb1 | None, tuple[float, float, float] | None, float | None, float | None]
 
 
 class FleetMaster:
@@ -253,7 +256,7 @@ class FleetMaster:
         logger.warning("get_grid() is not yet implemented.")
         return offset, grid
 
-    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Any | None:
+    def _create_hyddb_from_data(self, hydro_data: dict[str, Any]) -> Hyddb1 | None:
         """Creates and populates a Hyddb1 object from a dictionary of hydro data."""
 
         # Extract data from the hydro_data dictionary, which comes from the HDF5 file
@@ -338,12 +341,6 @@ class FleetMaster:
 
             return
 
-        # NOTE: load_meshes_from_hdf5 opens the HDF5 file again, which is suboptimal.
-
-        # For a complete single-pass implementation, the logic from that function
-
-        # would need to be integrated here.
-
         candidate_mesh_names = [str(name) for name in mesh_group if name != base_mesh_name_str]
 
         all_meshes_to_load = [base_mesh_name_str, *candidate_mesh_names]
@@ -352,7 +349,7 @@ class FleetMaster:
             mesh.metadata["name"]: EngineMesh(
                 name=mesh.metadata["name"], mesh=mesh, config=MeshConfig(file="from_hdf5")
             )
-            for mesh in load_meshes_from_hdf5(self.filename, all_meshes_to_load)
+            for mesh in load_meshes_from_hdf5(f, all_meshes_to_load)
         }
 
         self.base_mesh_name = base_mesh_name_str
@@ -493,39 +490,64 @@ class FleetMaster:
         target_rotation: list[float],
     ) -> tuple[str | None, float]:
         """
-        Finds the best matching mesh from an HDF5 database for a given target transformation.
+        Finds the best matching mesh from the database for a given target transformation.
 
         The function works as follows:
-        1.  For each candidate, transform the base_mesh using a hybrid transformation:
-            - XY-translation and Z-rotation from the candidate.
-            - Z-translation and XY-rotation from the target transformation.
-        2.  Compute the Chamfer distance between the wetted surface of the transformed
-            base mesh and the wetted surface of the candidate mesh.
-        3.  Return the name of the mesh with the smallest Chamfer distance.
+        1.  Creates a target wetted mesh by transforming the base mesh. This transformation
+            only considers the shape-defining degrees of freedom: Z-translation (draft),
+            roll, and pitch. XY-translation and yaw are ignored as they do not change
+            the submerged shape of the vessel.
+        2.  The resulting mesh is cut at the specified water level to get the wetted surface.
+        3.  This target wetted mesh is then compared against all pre-computed candidate
+            wetted meshes in the database using the Chamfer distance.
+        4.  The name of the candidate mesh with the smallest distance is returned as the best match.
 
         Args:
-            hdf5_path (Path): Path to the HDF5 database file.
-            target_translation (list[float]): The target translation [x, y, z] to apply to the base mesh.
-            target_rotation (list[float]): The target rotation [roll, pitch, yaw] in degrees.
-            water_level (float): The water level to use for cutting the meshes for comparison. Defaults to 0.0.
+            target_translation: The target translation [x, y, z].
+            target_rotation: The target rotation [roll, pitch, yaw] in degrees.
 
         Returns:
-            A tuple containing the name of the best matching mesh and the corresponding Chamfer distance.
-            Returns (None, np.inf) if no match is found.
+            A tuple containing the name of the best matching mesh and the corresponding
+            Chamfer distance. Returns (None, np.inf) if no match is found.
         """
-
         if not self.base_mesh or not self.candidate_meshes:
             logger.warning("Base mesh or candidate meshes not loaded. Cannot find best match.")
             return None, np.inf
 
-        # 3. Find the distances for all candidates based on the new logic
-        all_distances = self._find_best_fit_for_candidates(
-            target_translation=target_translation,
-            target_rotation=target_rotation,
-            water_level=0.0,
+        # The water_depth is the water level for cutting the mesh.
+        water_level = self._water_depth
+
+        # 1. Create the target wetted mesh.
+        # We only consider Z-translation (draft), roll, and pitch for the shape.
+        # XY-translation and yaw are irrelevant for the wetted surface shape.
+        shape_defining_translation = [0.0, 0.0, target_translation[2]]
+        shape_defining_rotation = [target_rotation[0], target_rotation[1], 0.0]
+
+        temp_base_mesh = self.base_mesh.copy()
+        transformed_base_mesh = _apply_mesh_translation_and_rotation(
+            mesh=temp_base_mesh.mesh,
+            translation_vector=shape_defining_translation,
+            rotation_vector_deg=shape_defining_rotation,
         )
 
-        # 4. Find the minimum distance among the results
+        dummy_config = MeshConfig(file="dummy")
+        engine_mesh_for_cutting = EngineMesh(name="target_shape", mesh=transformed_base_mesh, config=dummy_config)
+
+        _, target_wetted_mesh = _prepare_capytaine_body(
+            engine_mesh=engine_mesh_for_cutting,
+            lid=False,
+            grid_symmetry=False,
+            water_level=water_level,
+        )
+
+        if not target_wetted_mesh or len(target_wetted_mesh.vertices) == 0:
+            logger.warning("Target mesh is out of the water. Cannot find any match.")
+            return None, np.inf
+
+        # 2. Calculate distances to all candidates
+        all_distances = self._calculate_distances_to_candidates(target_wetted_mesh)
+
+        # 3. Find the minimum distance among the results
         if not all_distances:
             logger.warning("No distances could be calculated.")
             return None, np.inf
@@ -536,29 +558,12 @@ class FleetMaster:
         logger.info(f"Best match found: '{best_match_name}' with a Chamfer distance of {min_distance:.4f}")
         return best_match_name, min_distance
 
-    def _find_best_fit_for_candidates(
-        self,
-        target_translation: list[float],
-        target_rotation: list[float],
-        water_level: float,
-    ) -> dict[str, float]:
+    def _calculate_distances_to_candidates(self, target_wetted_mesh: trimesh.Trimesh) -> dict[str, float]:
         """
-        Finds the best fit for a base mesh against a set of candidate meshes.
-
-        For each candidate, this function transforms a copy of the base mesh using a hybrid
-        transformation derived from the candidate and a target transformation.
-
-        - XY translation from the candidate, Z translation from the target.
-        - Z rotation (yaw) from the candidate, XY rotation (roll, pitch) from the target.
-
-        It then calculates the Chamfer distance between the wetted surfaces.
+        Calculates the Chamfer distance from the target wetted mesh to all candidate meshes.
 
         Args:
-            base_mesh: The base trimesh object.
-            candidate_meshes: A dictionary mapping mesh names to their trimesh objects.
-            target_translation: The target global translation [x, y, z].
-            target_rotation: The target global rotation [roll, pitch, yaw] in degrees.
-            water_level: The water level at which to cut the mesh for a fair comparison.
+            target_wetted_mesh: The trimesh object of the target wetted surface.
 
         Returns:
             A dictionary mapping each candidate mesh name to its calculated Chamfer distance.
@@ -566,68 +571,11 @@ class FleetMaster:
         if self.base_mesh is None:
             raise BaseMeshIsNoneError(base_mesh_name=str(self.base_mesh_name))
         distances = {}
-        logger.info(f"Finding best fit for {len(self.candidate_meshes)} candidate meshes...")
+        logger.info(f"Calculating distances to {len(self.candidate_meshes)} candidate meshes...")
 
         for name, candidate_mesh in self.candidate_meshes.items():
-            candidate_translation = candidate_mesh.mesh.metadata.get("translation")
-            candidate_rotation = candidate_mesh.mesh.metadata.get("rotation")
-
-            if candidate_translation is None or candidate_rotation is None:
-                logger.warning(f"Candidate '{name}' is missing translation/rotation metadata. Skipping.")
-                distances[name] = np.inf
-                continue
-
-            # The goal of the fitting is to find a mesh from the database that best matches
-            # the target's submerged shape, which is primarily determined by Z-translation (draft)
-            # and X/Y-rotations (roll, pitch). The database contains meshes with varying roll and pitch,
-            # but typically constant XY translation and Z-rotation (yaw).
-            #
-            # To find the best match, we create a hybrid transformation that respects these assumptions:
-            # - We use the target's Z-translation (draft) because that's a key property we're matching.
-            # - We use the target's roll and pitch for the same reason.
-            # - We take the candidate's XY-translation and yaw, because these are considered irrelevant
-            #   for the shape matching and are constant in the database generation process.
-            #
-            # This allows us to transform the base mesh into a shape that is directly comparable
-            # with the candidate's wetted surface.
-            new_translation = [
-                candidate_translation[0],
-                candidate_translation[1],
-                target_translation[2],
-            ]
-            new_rotation = [
-                target_rotation[0],
-                target_rotation[1],
-                candidate_rotation[2],
-            ]
-
-            temp_base_mesh = self.base_mesh.copy()
-            transformed_base_mesh = _apply_mesh_translation_and_rotation(
-                mesh=temp_base_mesh.mesh,
-                translation_vector=new_translation,
-                rotation_vector_deg=new_rotation,
-            )
-
-            # Create a dummy EngineMesh to use the _prepare_capytaine_body function for cutting the mesh.
-            dummy_config = MeshConfig(file="dummy")
-            engine_mesh_for_cutting = EngineMesh(name="temp_base", mesh=transformed_base_mesh, config=dummy_config)
-
-            _, cut_transformed_base_mesh = _prepare_capytaine_body(
-                engine_mesh=engine_mesh_for_cutting,
-                lid=False,
-                grid_symmetry=False,
-                water_level=water_level,
-            )
-
-            if not cut_transformed_base_mesh or len(cut_transformed_base_mesh.vertices) == 0:
-                logger.warning(
-                    f"Transformed base mesh for candidate '{name}' is out of the water. Assigning infinite distance."
-                )
-                distances[name] = np.inf
-                continue
-
             # The candidate mesh from the database is already the wetted surface.
-            distance = _calculate_chamfer_distance(cut_transformed_base_mesh, candidate_mesh.mesh)
+            distance = _calculate_chamfer_distance(target_wetted_mesh, candidate_mesh.mesh)
             logger.debug(f"  - Calculated distance to '{name}': {distance:.4f}")
             distances[name] = distance
 

@@ -6,14 +6,38 @@ Fleetmaster is used to generate an HDF5 database containing a collection of Capy
 
 ## Mesh definitions
 
-Each HDF5 database is built around a single **base mesh**. This base mesh serves as the fundamental reference geometry. It has a `base_origin` point, which should correspond to a known world coordinate point when you position the mesh in a global context. The name of this base mesh is stored as a root-level attribute named `base_mesh` in the HDF5 file. The geometry of the base mesh itself is stored as a dataset within the `/meshes` group.
+Each HDF5 database is built around a single **base mesh**. This base mesh serves as the fundamental reference geometry.
+
+![image-20251104162052926](./image-20251104162052926.png)
+
+On this base-mesh we define a base_origin_position. If the STL was provided using a good convention then this can be left at (0,0,0).
+
+It is highly recommended to textually describe which point on the vessel the base-origin defines. In the example above this could be "Aft perpendicular, keel, centerline".
+
+**On the base-mesh, we**
+
+**The origin of the base-mesh should correspond to a known point POINT ON THE VESSEL.**
+
+**The scale of the mesh should be meters**
+
+**The origin of the mesh, as well as the axis definition, shall be documented as text.**
+
+**Recommendation:**
+
+- **Origin: stern, centerline, keel**
+- **X towards bow**
+- **Y towards PS**
+- **Z upwards**
+
+point when you position the mesh in a global context. The name of this base mesh is stored as a root-level attribute named `base_mesh` in the HDF5 file. The geometry of the base mesh itself is stored as a dataset within the `/meshes` group.
 
 In addition to the base mesh, the `/meshes` group can contain multiple **candidate meshes**. Each candidate mesh represents a variation of the base mesh and has the following characteristics:
 
 - A unique mesh name.
 - Its own geometry, stored as a dataset.
-- A `translation` and `rotation` attribute, which define its position and orientation relative to the base mesh's `base_origin`.
+- A `translation` and `rotation` attribute, which define its position and orientation relative to the base mesh
 - A specific `cog` (center of gravity) attribute. This `cog` is used by Capytaine as the center for the BEM (Boundary Element Method) solution.
+- **The point of application. This is the point on which the calculated forces act and relative to which the phases are calculated.** **Typical locations are the center of flotation or the center of buoyancy.**
 
 The transformation from the base mesh to a candidate mesh is applied in a specific order: first, rotation is performed around the `cog`, and then translation is applied. These transformation attributes are stored for each mesh.
 

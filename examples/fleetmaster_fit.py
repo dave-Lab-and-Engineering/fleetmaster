@@ -21,6 +21,7 @@ HERE = Path(__file__).parent.resolve()
 
 
 def _run_and_print_test_case(
+    output_filename: str,
     case_number: int,
     description: str,
     fm: FleetMaster,
@@ -60,7 +61,7 @@ def _run_and_print_test_case(
             print(f"   - Successfully retrieved Hyddb1 object with {hyddb.n_frequencies} frequencies.")
             # Demonstrate saving the hyddb1 object
             try:
-                hyd_filename = HERE / f"case_{case_number}.dhyd"
+                hyd_filename = (HERE / f"{output_filename}").with_suffix(".dhyd")
                 # hyddb.to_hyd_file(str(hyd_filename))
                 hyddb.save_as(str(hyd_filename))
                 print(f"   - Saved Hyddb1 object to '{hyd_filename}'")
@@ -94,6 +95,7 @@ def run_fleetmaster_fitting_example():
     # --- Test Case 1: Just move down
     _run_and_print_test_case(
         case_number=1,
+        output_filename="case_draft1.dhyd",
         description="Exact Match Draft 1 meter",
         fm=fm,
         translation=[0.0, 0.0, -1.0],
@@ -101,22 +103,24 @@ def run_fleetmaster_fitting_example():
     )
 
     # --- Test Case 1: A transformation that should perfectly match an existing mesh ---
-    # _run_and_print_test_case(
-    #     case_number=2,
-    #     description="Exact Match Draft 1 meter",
-    #     fm=fm,
-    #     translation=[0.0, 0.0, -2.0],
-    #     rotation_deg=[0.0, 0.0, 0.0],
-    # )
+    _run_and_print_test_case(
+        output_filename="case_draft2.dhyd",
+        case_number=2,
+        description="Exact Match Draft 1 meter",
+        fm=fm,
+        translation=[0.0, 0.0, -2.0],
+        rotation_deg=[0.0, 0.0, 0.0],
+    )
 
-    # # --- Test Case 2: A transformation with irrelevant translations and rotations ---
-    # _run_and_print_test_case(
-    #     case_number=3,
-    #     description="Move down 1.0 and rotate 20 deg pitch, 20 deg roll, 15 deg yaw",
-    #     fm=fm,
-    #     translation=[2.5, -4.2, -1.0],  # Added dx, dy and dz
-    #     rotation_deg=[20.0, 20.0, 15.0],  # Added yaw
-    # )
+    # --- Test Case 2: A transformation with irrelevant translations and rotations ---
+    _run_and_print_test_case(
+        output_filename="case_draft1_r20_20.dhyd",
+        case_number=3,
+        description="Move down 1.0 and rotate 20 deg pitch, 20 deg roll, 15 deg yaw",
+        fm=fm,
+        translation=[2.5, -4.2, -1.0],  # Added dx, dy and dz
+        rotation_deg=[20.0, 20.0, 15.0],  # Added yaw
+    )
 
 
 if __name__ == "__main__":

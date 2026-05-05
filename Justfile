@@ -71,7 +71,7 @@ build: clean-build
 
 # Clean build artifacts
 clean-build:
-    @echo "🚀 Removing build artifacts"
+    @echo "🧹 Removing build artifacts"
     @uv run python -c "import shutil; shutil.rmtree('dist', ignore_errors=True)"
 
 # ---------------------------------------
@@ -111,40 +111,57 @@ docs:
 # ---------------------------------------
 # Examples
 # ---------------------------------------
-# Generate the example meshes. Requires pymeshup to be installed
+# Generate all the example meshes. Requires pymeshup to be installed
 generate-all: install-pymeshup generate-box-mesh-full generate-box-mesh-half generate-ship-rotation
 
+# Generate the full example meshes. Requires pymeshup to be installed
 generate-box-mesh-full:
     @uv run python examples/defraction_box.py --output-dir examples --file-base defraction_box_full; exit 0
+# Generate the half example meshes. Requires pymeshup to be installed
 generate-box-mesh-half:
     @uv run python examples/defraction_box.py --output-dir examples --file-base defraction_box_half --grid-symmetry; exit 0
+# Generate the ship example meshes. Requires pymeshup to be installed
 generate-ship-rotation:
     @uv run python examples/defraction_box.py --output-dir examples --file-base boxship --only-base; exit 0
 
-# Run fleetmaster examples
-fleetmaster-all: fleetmaster-full fleetmaster-half fleetmaster-rotation fleetmaster-single-case-nc
+# Run all the fleetmaster examples, including mesh generation
+fleetmaster-all: fleetmaster-full fleetmaster-half fleetmaster-rotation fitting-example fitting-example-hyd fleetmaster-single-case-nc
+
 fleetmaster-full: generate-box-mesh-full
     @fleetmaster -v run --settings-file examples/settings_full.yml --lid; exit 0
+# Run fleetmaster examples for half mesh
 fleetmaster-half: generate-box-mesh-half
     @fleetmaster -v run --settings-file examples/settings_half.yml; exit 0
+# Run fleetmaster examples for ship with rotation and translation
 fleetmaster-rotation: generate-ship-rotation
     @fleetmaster -v run --settings-file examples/settings_rotations.yml; exit 0
 fleetmaster-single-case-nc: generate-ship-rotation
     @fleetmaster -v run --settings-file examples/settings_single_case_nc.yml; exit 0
 
+# Run the standalone fitting example for generating the database
 fitting-example:
     @uv run python examples/fitting_example.py
 
+# Run the standalone fitting example for using the database
+fitting-example-hyd:
+    @uv run python examples/fleetmaster_fit.py
+
 # clean examples directory
-clean-examples: clean-examples-stl clean-examples-hdf5
+clean-examples: clean-examples-stl clean-examples-hdf5 clean-examples-hyd clean-examples-nc
 # clean examples stl files
 clean-examples-stl:
-    @echo "🚀 Removing all stl example files"
+    @echo "🧹 Removing all stl example files"
     @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.stl')]"
 # clean examples hdf5 files
 clean-examples-hdf5:
-    @echo "🚀 Removing all hdf5 example files"
+    @echo "🧹 Removing all hdf5 example files"
     @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.hdf5')]"
+clean-examples-hyd:
+    @echo "🧹 Removing all hyd example files"
+    @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.[d]hyd')]"
+clean-examples-nc:
+    @echo "🧹 Removing all nc example files"
+    @python -c "from pathlib import Path; [p.unlink() for p in Path('examples').glob('*.nc')]"
 
 
 # ---------------------------------------

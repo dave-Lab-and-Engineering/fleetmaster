@@ -935,6 +935,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
+    { name = "pytest-regressions" },
     { name = "ruff" },
     { name = "tox-uv" },
     { name = "types-pyyaml" },
@@ -949,7 +950,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.1.8" },
     { name = "h5netcdf", specifier = ">=1.7.0" },
     { name = "h5py", specifier = ">=3.15.0" },
-    { name = "mafredo", git = "https://github.com/eelcovv/mafredo.git" },
+    { name = "mafredo", specifier = ">=2025.4.0" },
     { name = "numpy", specifier = ">=2.0.2" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "pyglet", specifier = "<2" },
@@ -978,6 +979,7 @@ dev = [
     { name = "pytest", specifier = ">=7.2.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
     { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "pytest-regressions", specifier = ">=2.8.3" },
     { name = "ruff", specifier = ">=0.14.1" },
     { name = "tox-uv", specifier = ">=1.11.3" },
     { name = "types-pyyaml", specifier = ">=6.0.12.12" },
@@ -1523,17 +1525,21 @@ wheels = [
 
 [[package]]
 name = "mafredo"
-version = "0.0.post124+g6c1c4ab95"
-source = { git = "https://github.com/eelcovv/mafredo.git#6c1c4ab953bd80b66613e8e7fafaeeff07ee69eb" }
+version = "2025.4.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "capytaine" },
+    { name = "h5netcdf" },
     { name = "matplotlib" },
-    { name = "netcdf4" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyyaml" },
     { name = "xarray", version = "2025.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "xarray", version = "2025.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ab/3a/f37f5e36a64727a05c78b8f243967cd8bef27ab888225d57c7b6493c8b4b/mafredo-2025.4.0.tar.gz", hash = "sha256:b1c4d07bde57f71690e8e70264ae767423ca452d22269140944f2be055684652", size = 1734230, upload-time = "2025-11-10T10:23:35.236Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/7e/b2f57475b9d56bea94663eae6182230d945806ead21a3e50ec671c788fd8/mafredo-2025.4.0-py3-none-any.whl", hash = "sha256:4a52429047fc396e2208e695b7208bee42388b3ee067c07d110fb8aaa243c50f", size = 30342, upload-time = "2025-11-10T10:23:33.022Z" },
 ]
 
 [[package]]
@@ -2990,6 +2996,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-datadir"
+version = "1.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b4/46/db060b291999ca048edd06d6fa9ee95945d088edc38b1172c59eeb46ec45/pytest_datadir-1.8.0.tar.gz", hash = "sha256:7a15faed76cebe87cc91941dd1920a9a38eba56a09c11e9ddf1434d28a0f78eb", size = 11848, upload-time = "2025-07-30T13:52:12.518Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8f/7a/33895863aec26ac3bb5068a73583f935680d6ab6af2a9567d409430c3ee1/pytest_datadir-1.8.0-py3-none-any.whl", hash = "sha256:5c677bc097d907ac71ca418109adc3abe34cf0bddfe6cf78aecfbabd96a15cf0", size = 6512, upload-time = "2025-07-30T13:52:11.525Z" },
+]
+
+[[package]]
 name = "pytest-mock"
 version = "3.15.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2999,6 +3017,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/68/14/eb014d26be205d38ad5ad20d9a80f7d201472e08167f0bb4361e251084a9/pytest_mock-3.15.1.tar.gz", hash = "sha256:1849a238f6f396da19762269de72cb1814ab44416fa73a8686deac10b0d87a0f", size = 34036, upload-time = "2025-09-16T16:37:27.081Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5a/cc/06253936f4a7fa2e0f48dfe6d851d9c56df896a9ab09ac019d70b760619c/pytest_mock-3.15.1-py3-none-any.whl", hash = "sha256:0a25e2eb88fe5168d535041d09a4529a188176ae608a6d249ee65abc0949630d", size = 10095, upload-time = "2025-09-16T16:37:25.734Z" },
+]
+
+[[package]]
+name = "pytest-regressions"
+version = "2.8.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+    { name = "pytest-datadir" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3a/63/cdb0ee15012a538fa07de21ec0a5c8eb113db9f28378f67b538d1c0b6d04/pytest_regressions-2.8.3.tar.gz", hash = "sha256:1ad90708bee02a3d36c78ef0b6f9692a9a30d312dd828680fd6d2a7235fcd221", size = 117168, upload-time = "2025-09-05T12:51:32.319Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/55/b9/7b2fe8407744cc37a74e29bed833256a305133505ea4979564911a98338b/pytest_regressions-2.8.3-py3-none-any.whl", hash = "sha256:72500dd95bde418c850f290a3108dacb56427067f364f7112cb5b16f6d6cc29c", size = 24894, upload-time = "2025-09-05T12:51:31.1Z" },
 ]
 
 [[package]]

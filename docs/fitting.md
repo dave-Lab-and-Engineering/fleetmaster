@@ -27,11 +27,17 @@ The process involves the following steps:
 
 ![World mesh location (left) making use of candidate meshes stored in the database (right)](images/fitting_targets.svg){id="fitting"}
 
-[Figure 2](#fitting) illustrates how mesh fitting works. On the left, we see the same database of candidate meshes as described in the previous section. On the right, we have two example target meshes: Target Mesh 1 (purple) and Target Mesh 2 (cyan).
+[Figure 2](#fitting) illustrates how mesh fitting works. On the left **RIGHT**, we see the same database of candidate meshes as described in the previous section. On the right **LEFT**, we have two example target meshes: Target Mesh 1 (purple) and Target Mesh 2 (cyan).
+
+**Only the submeged parts of the meshes are present, except for the base-mesh**
 
 Target Mesh 1 has no rotation and a draft very close to that of Candidate Mesh 2. We would therefore want to use the solution belonging to Candidate Mesh 2. To find this best match, the target mesh is translated and rotated according to each of our candidate meshes, but only for the XY-plane translation and the Z-axis rotation (yaw). The reason for this is that the Capytaine solution is independent of the mesh's location in the XY-plane; only the draft (Z-translation) and roll/pitch (X/Y-rotations) are relevant.
 
-Therefore, we first align our target mesh with each candidate in the XY-plane. Then, we calculate the mean distance between the submerged parts of both the target and the candidate. We use the **Chamfer distance** for this, which is the root mean square distance between all mesh points. This Chamfer distance is calculated for all our candidate meshes. The mesh with the smallest Chamfer distance is the best fit for our case. For Target Mesh 1, this would be Candidate Mesh 2, as it yields the smallest Chamfer distance.
+Therefore, we first align our target mesh with each candidate in the XY-plane. Then, we calculate the mean distance between the submerged parts of both the target and the candidate. We use the **Chamfer distance** for this, which is the root mean square distance between all mesh points.
+
+**This is very inconvenient as the mesh resolution may be different**
+
+This Chamfer distance is calculated for all our candidate meshes. The mesh with the smallest Chamfer distance is the best fit for our case. For Target Mesh 1, this would be Candidate Mesh 2, as it yields the smallest Chamfer distance.
 
 The second target mesh has a deeper draft and a slight pitch around the x-axis. In this case, the third candidate mesh would yield the smallest Chamfer distance after the meshes have been translated to the same position in the XY-plane.
 

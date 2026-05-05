@@ -243,14 +243,43 @@ def _load_and_validate_settings(
     _validate_input_combinations(settings_file, expanded_stl_files, cli_args)
     config = _load_config(settings_file, cli_args)
 
-    base_mesh_path = config.get("base_mesh")
-    if "stl_files" in config:
-        all_files_in_config = [item if isinstance(item, str) else item["file"] for item in config["stl_files"]]
+    # Ensure base_mesh is an absolute path to an STL file
+    if config.get("base_mesh"):
+        base_mesh_path_obj = Path(config["base_mesh"])
+        if not base_mesh_path_obj.is_absolute():
+            # This case should ideally be handled by _resolve_paths_in_config,
+            # but adding a safeguard here.
+            settings_dir = Path(settings_file).parent if settings_file else Path.cwd()
+            config["base_mesh"] = str((settings_dir / base_mesh_path_obj).resolve())
 
-        if not base_mesh_path and all_files_in_config:
-            base_mesh_path = all_files_in_config[0]
-            logger.info(f"No --base-mesh provided. Using the first STL file as the base mesh: {base_mesh_path}")
-            config["base_mesh"] = base_mesh_path
+        # Additional check to ensure it's an STL file
+        if not config["base_mesh"].lower().endswith(".stl"):
+            err_msg = f"The base_mesh '{config['base_mesh']}' is not an STL file. Please provide a valid STL file."
+            raise click.UsageError(err_msg)
+    elif config.get("stl_files"):
+        # If base_mesh is not explicitly set, use the first STL file from stl_files
+        # This path should already be resolved by _resolve_paths_in_config
+        first_stl_file = config["stl_files"][0]
+        if isinstance(first_stl_file, dict):
+            config["base_mesh"] = first_stl_file["file"]
+        elif isinstance(first_stl_file, MeshConfig):
+            config["base_mesh"] = first_stl_file.file
+        else:  # it's a string
+            config["base_mesh"] = first_stl_file
+
+        logger.info(f"No --base-mesh provided. Using the first STL file as the base mesh: {config['base_mesh']}")
+
+    # The original logic for setting base_mesh if not explicitly provided
+    # and using the first STL file is now integrated above.
+    # Remove the redundant block.
+    # base_mesh_path = config.get("base_mesh")
+    # if "stl_files" in config:
+    #     all_files_in_config = [item if isinstance(item, str) else item["file"] for item in config["stl_files"]]
+    #
+    #     if not base_mesh_path and all_files_in_config:
+    #         base_mesh_path = all_files_in_config[0]
+    #         logger.info(f"No --base-mesh provided. Using the first STL file as the base mesh: {base_mesh_path}")
+    #         config["base_mesh"] = base_mesh_path
 
     config.update(cli_args)
 
