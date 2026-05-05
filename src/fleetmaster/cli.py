@@ -19,7 +19,7 @@ import click
 from rich.logging import RichHandler
 
 from . import __version__
-from .commands import export_dhyd, gui, list_command, run, view
+from .commands import export_dhyd, gui, list_command, plot, run, view
 from .logging_setup import setup_general_logger
 
 logger = setup_general_logger()
@@ -92,6 +92,7 @@ cli.add_command(run, name="run")
 cli.add_command(export_dhyd, name="export-dhyd")
 cli.add_command(gui, name="gui")
 cli.add_command(list_command, name="list")
+cli.add_command(plot, name="plot")
 cli.add_command(view, name="view")
 
 

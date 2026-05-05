@@ -81,6 +81,26 @@ Notes:
 - With an explicit `output_dhyd_file` and multiple cases, Fleetmaster uses that filename as a base and appends the case name.
 - If a case already exists in the HDF5 and `update_cases` is disabled, that case is skipped.
 
+### 3) Inspect cases or plot a theta/period grid
+
+List simulation cases:
+
+```bash
+uv run fleetmaster list results.hdf5 --cases
+```
+
+Create a quick grid plot for one case:
+
+```bash
+uv run fleetmaster plot results.hdf5 boxship_wd_inf_wl_0_fs_0
+```
+
+Write the plot to a specific PNG:
+
+```bash
+uv run fleetmaster plot results.hdf5 boxship_wd_inf_wl_0_fs_0 --output boxship_grid.png
+```
+
 ### 2) Export `.dhyd` from an existing HDF5 database (without rerunning Capytaine)
 
 List cases in an existing HDF5:

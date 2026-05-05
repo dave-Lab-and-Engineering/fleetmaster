@@ -1,4 +1,4 @@
-"""CLI command for listing meshes from HDF5 databases."""
+"""CLI command for listing meshes or cases from HDF5 databases."""
 
 import io
 import logging
@@ -108,7 +108,7 @@ def _list_meshes(stream: Any, hdf5_path: str) -> None:
         click.echo("  No meshes found.")
 
 
-@click.command(name="list", help="List all meshes available in one or more HDF5 database files.")
+@click.command(name="list", help="List meshes by default, or use --cases to list simulation cases.")
 @click.argument("files", nargs=-1, type=click.Path())
 @click.option(
     "--file",
@@ -119,7 +119,7 @@ def _list_meshes(stream: Any, hdf5_path: str) -> None:
 )
 @click.option("--cases", is_flag=True, help="List simulation cases and their properties instead of meshes.")
 def list_command(files: tuple[str, ...], option_files: tuple[str, ...], cases: bool) -> None:
-    """CLI command to list meshes."""
+    """CLI command to list meshes or cases."""
     # Combine positional arguments and optional --file arguments
     all_files = set(files) | set(option_files)
 
