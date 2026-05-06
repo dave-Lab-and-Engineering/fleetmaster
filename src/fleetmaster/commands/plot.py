@@ -71,16 +71,26 @@ def _default_hyd_plot_output_dir(hdf5_file: Path) -> Path:
     return hdf5_file.parent / "hyd_plots"
 
 
-def _save_hyd_plot_figures(figures: Any, output_dir: Path, case_name: str) -> list[Path]:
+def _collect_hyd_plot_figures(figures: Any, existing_figure_numbers: set[int]) -> list[Any]:
+    """Collect hydrodynamic plot figures from return values or matplotlib state."""
+    if figures is not None:
+        figure_items = list(figures) if isinstance(figures, (list, tuple)) else [figures]
+        valid_figures = [figure for figure in figure_items if hasattr(figure, "savefig")]
+        if valid_figures:
+            return valid_figures
+
+    import matplotlib.pyplot as plt
+
+    new_numbers = [num for num in plt.get_fignums() if num not in existing_figure_numbers]
+    return [plt.figure(num) for num in new_numbers]
+
+
+def _save_hyd_plot_figures(figures: list[Any], output_dir: Path, case_name: str) -> list[Path]:
     """Save matplotlib figures returned by mafredo Hyddb1.plot."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    figure_items = list(figures) if isinstance(figures, (list, tuple)) else [figures]
-
     saved_paths: list[Path] = []
-    for index, figure in enumerate(figure_items, start=1):
-        if not hasattr(figure, "savefig"):
-            continue
+    for index, figure in enumerate(figures, start=1):
         out_path = output_dir / f"{case_name}_hyd_{index:02d}.png"
         figure.savefig(out_path, dpi=180)
         saved_paths.append(out_path)
@@ -167,16 +177,22 @@ def plot(
     click.echo(f"✅ Saved grid plot to '{saved_path}'.")
 
     if hyd_plot:
+        import matplotlib.pyplot as plt
+
         hyd = create_hyd_from_capytaine_data(loaded_dataset)
-        figures = hyd.plot(do_show=show)
+        existing_figure_numbers = set(plt.get_fignums())
+        figures = hyd.plot(do_show=False)
+        hyd_figures = _collect_hyd_plot_figures(figures, existing_figure_numbers)
 
         if save_hyd_plots:
             output_dir = _default_hyd_plot_output_dir(db_path) if hyd_output_dir is None else Path(hyd_output_dir)
-            saved_hyd_paths = _save_hyd_plot_figures(figures, output_dir, selected_case)
+            saved_hyd_paths = _save_hyd_plot_figures(hyd_figures, output_dir, selected_case)
             if saved_hyd_paths:
                 click.echo(f"✅ Saved {len(saved_hyd_paths)} hydrodynamic plot(s) to '{output_dir}'.")
+                for saved_hyd_path in saved_hyd_paths:
+                    click.echo(f"   - {saved_hyd_path}")
             else:
-                click.echo("⚠️ No hydrodynamic plot figures were returned by mafredo to save.")
+                click.echo("⚠️ No hydrodynamic plot figures were available to save.")
 
     if show:
         import matplotlib.pyplot as plt

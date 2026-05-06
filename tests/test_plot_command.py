@@ -6,6 +6,7 @@ import xarray as xr
 from click import UsageError
 
 from fleetmaster.commands.plot import (
+    _collect_hyd_plot_figures,
     _default_hyd_plot_output_dir,
     _default_plot_output_path,
     _extract_grid_coverage,
@@ -66,6 +67,37 @@ def test_save_hyd_plot_figures(tmp_path: Path) -> None:
     assert saved_paths[1].name == "case_a_hyd_02.png"
     assert saved_paths[0].exists()
     assert saved_paths[1].exists()
+
+
+def test_collect_hyd_plot_figures_from_return_value() -> None:
+    class DummyFigure:
+        def savefig(self, path: Path, dpi: int = 180) -> None:
+            del path, dpi
+
+    returned = [DummyFigure(), object()]
+    figures = _collect_hyd_plot_figures(returned, existing_figure_numbers=set())
+    assert len(figures) == 1
+
+
+def test_collect_hyd_plot_figures_from_matplotlib_state(monkeypatch) -> None:
+    class DummyPlt:
+        @staticmethod
+        def get_fignums() -> list[int]:
+            return [1, 2, 4]
+
+        @staticmethod
+        def figure(num: int) -> str:
+            return f"fig-{num}"
+
+    import sys
+    import types
+
+    matplotlib_module = types.SimpleNamespace(pyplot=DummyPlt())
+    monkeypatch.setitem(sys.modules, "matplotlib", matplotlib_module)
+    monkeypatch.setitem(sys.modules, "matplotlib.pyplot", DummyPlt())
+
+    figures = _collect_hyd_plot_figures(None, existing_figure_numbers={1, 2})
+    assert figures == ["fig-4"]
 
 
 def test_resolve_plot_case_name_single_case(tmp_path: Path) -> None:
