@@ -9,6 +9,7 @@ import xarray as xr
 
 from fleetmaster.core.engine import (
     EngineMesh,
+    _clip_mesh_at_waterplane,
     _export_transformed_mesh_to_stl,
     _format_value_for_name,
     _generate_case_group_name,
@@ -656,3 +657,45 @@ def test_process_single_stl_from_db(mock_run_pipeline, mock_load_meshes, mock_lo
     assert engine_mesh_arg.mesh == mock_mesh_from_db
     assert engine_mesh_arg.name == "dummy_name"
     assert engine_mesh_arg.config == mesh_config
+
+
+# ---------------------------------------------------------------------------
+# Tests for _clip_mesh_at_waterplane
+# ---------------------------------------------------------------------------
+
+
+def test_clip_mesh_at_waterplane_removes_above_water_faces():
+    """After clipping, no vertex should be above z=0."""
+    # A box centred at z=0: vertices from -1 to +1 in all axes.
+    box = trimesh.creation.box(extents=[2, 2, 2])
+    # Box is already centred at z=0; the top half (z > 0) should be clipped away.
+
+    clipped = _clip_mesh_at_waterplane(box)
+
+    assert not clipped.is_empty
+    # All vertices must be at or below the waterplane.
+    assert clipped.vertices[:, 2].max() <= 1e-6
+
+
+def test_clip_mesh_at_waterplane_fully_submerged_unchanged():
+    """A mesh entirely below z=0 should be returned with the same face count."""
+    box = trimesh.creation.box(extents=[2, 2, 2])
+    box.apply_translation([0, 0, -2])  # top face at z=-1, fully submerged
+
+    before_count = len(box.faces)
+    clipped = _clip_mesh_at_waterplane(box)
+
+    assert len(clipped.faces) == before_count
+
+
+def test_clip_mesh_at_waterplane_fully_above_water_returns_original(caplog):
+    """A mesh entirely above z=0 results in a warning and the original mesh is returned."""
+    box = trimesh.creation.box(extents=[2, 2, 2])
+    box.apply_translation([0, 0, 2])  # bottom face at z=1, fully above waterplane
+
+    with caplog.at_level("WARNING"):
+        result = _clip_mesh_at_waterplane(box)
+
+    assert "empty after clipping" in caplog.text
+    # Original mesh is returned unchanged.
+    assert len(result.faces) == len(box.faces)

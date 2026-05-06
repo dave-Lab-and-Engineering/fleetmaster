@@ -154,12 +154,41 @@ def _prepare_trimesh_geometry(stl_file: str, mesh_config: MeshConfig | None = No
     if mesh_config is None:
         return mesh
 
-    return _apply_mesh_translation_and_rotation(
+    mesh = _apply_mesh_translation_and_rotation(
         mesh=mesh,
         translation_vector=mesh_config.translation,
         rotation_vector_deg=mesh_config.rotation,
         cog=mesh_config.cog,
     )
+
+    if mesh_config.clip_to_waterplane:
+        mesh = _clip_mesh_at_waterplane(mesh)
+
+    return mesh
+
+
+def _clip_mesh_at_waterplane(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
+    """Clip a mesh at z=0, keeping only the submerged part (z <= 0).
+
+    Panels entirely above the waterplane are removed, and panels that cross
+    z=0 are split at the intersection. The resulting mesh is open at the
+    waterplane — Capytaine's keep_immersed_part() will handle that correctly.
+    """
+    new_vertices, new_faces, _ = trimesh.intersections.slice_faces_plane(
+        vertices=mesh.vertices,
+        faces=mesh.faces,
+        plane_normal=[0, 0, -1],  # normal pointing down: keep z <= 0
+        plane_origin=[0, 0, 0],
+    )
+    if new_faces is None or len(new_faces) == 0:
+        logger.warning("Mesh is empty after clipping at z=0. Check that the mesh extends below the waterplane.")
+        return mesh
+    clipped = trimesh.Trimesh(vertices=new_vertices, faces=new_faces, process=False)
+    logger.debug(
+        f"Clipped mesh at z=0: {len(mesh.faces)} -> {len(clipped.faces)} faces "
+        f"(removed {len(mesh.faces) - len(clipped.faces)} above-water panels)."
+    )
+    return clipped
 
 
 def _apply_mesh_translation_and_rotation(

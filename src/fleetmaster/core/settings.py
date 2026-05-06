@@ -52,6 +52,13 @@ class MeshConfig(BaseModel):
     wave_directions: float | list[float] | None = Field(
         default=None, description="Mesh-specific wave directions in degrees. Overrides global settings."
     )
+    clip_to_waterplane: bool = Field(
+        default=False,
+        description=(
+            "If True, the mesh is clipped at z=0 after transformation, keeping only the submerged part. "
+            "Useful when the source STL contains above-water geometry with large panels."
+        ),
+    )
 
     @field_validator("translation", "rotation")
     def check_vector_length(cls, v: list[float]) -> list[float]:
