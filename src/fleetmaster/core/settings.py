@@ -13,6 +13,25 @@ from fleetmaster.core.exceptions import (
 MESH_GROUP_NAME = "meshes"
 
 
+def _parse_special_float_value(value: Any) -> Any:
+    """Parse string float aliases such as .inf into numeric numpy values."""
+    if not isinstance(value, str):
+        return value
+
+    lowered = value.strip().lower()
+    if lowered in {"inf", ".inf", "infinity", "np.inf", "+inf", "+.inf", "+infinity", "+np.inf"}:
+        return np.inf
+    if lowered in {"-inf", "-.inf", "-infinity", "-np.inf"}:
+        return -np.inf
+    if lowered in {"nan", ".nan", "np.nan"}:
+        return np.nan
+
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+
 class MeshConfig(BaseModel):
     """Configuration for a single mesh, including its path and transformation."""
 
@@ -123,6 +142,13 @@ class SimulationSettings(BaseModel):
             return v
         msg = f"Unsupported type for wave_periods/wave_directions: {type(v)}"
         raise TypeError(msg)
+
+    @field_validator("water_depth", "water_level", mode="before")
+    def normalize_water_values(cls, v: Any) -> Any:
+        """Normalize water settings so YAML forms like .inf map to numpy infinity."""
+        if isinstance(v, list):
+            return [_parse_special_float_value(item) for item in v]
+        return _parse_special_float_value(v)
 
     @field_validator("stl_files", mode="before")
     def normalize_stl_files(cls, v: Any) -> Any:
