@@ -13,6 +13,7 @@ from fleetmaster.core.engine import (
     _export_transformed_mesh_to_stl,
     _format_value_for_name,
     _generate_case_group_name,
+    _normalize_wave_directions_for_xz_heading_symmetry,
     _prepare_capytaine_body,
     _process_single_stl,
     _resolve_bulk_output_dhyd_path,
@@ -91,6 +92,22 @@ def test_setup_output_file_with_dict_as_stl(tmp_path):
     # If no output dir is specified, it should be the parent of the first STL
     assert result_path == tmp_path / "results.hdf5"
     assert result_path.parent.exists()
+
+
+def test_normalize_wave_directions_for_xz_heading_symmetry() -> None:
+    directions = [0.0, 45.0, 180.0, 225.0, 315.0]
+
+    normalized = _normalize_wave_directions_for_xz_heading_symmetry(directions)
+
+    assert normalized == [0.0, 45.0, 180.0, 135.0]
+
+
+def test_normalize_wave_directions_for_xz_heading_symmetry_deduplicates() -> None:
+    directions = [0.0, 360.0, -0.0, 190.0, 170.0]
+
+    normalized = _normalize_wave_directions_for_xz_heading_symmetry(directions)
+
+    assert normalized == [0.0, 170.0]
 
 
 @patch("fleetmaster.core.engine.cpt")

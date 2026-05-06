@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import tempfile
+import time
 from dataclasses import dataclass
 from itertools import product
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any
 
 import capytaine as cpt
 import h5py
+import mafredo
 import numpy as np
 import numpy.typing as npt
 import trimesh
@@ -41,16 +43,15 @@ class EngineMesh:
         )
 
 
-def make_database(
+def _build_bem_problems(
     body: Any,
     omegas: list | npt.NDArray[np.float64],
     wave_directions: list | npt.NDArray[np.float64],
     water_depth: float,
     water_level: float,
     forward_speed: float,
-) -> Any:
-    """Create a dataset of BEM results for a given body and conditions."""
-    bem_solver = cpt.BEMSolver()
+) -> list[Any]:
+    """Build radiation and diffraction problems for BEM solving."""
     problems: list[Any] = []
     logger.debug(f"Solving for water_depth={water_depth} water_level={water_level} forward_speed={forward_speed}")
     for omega in omegas:
@@ -78,8 +79,64 @@ def make_database(
                     forward_speed=forward_speed,
                 )
             )
+    return problems
 
-    results = [bem_solver.solve(problem) for problem in problems]
+
+def make_database(
+    body: Any,
+    omegas: list | npt.NDArray[np.float64],
+    wave_directions: list | npt.NDArray[np.float64],
+    water_depth: float,
+    water_level: float,
+    forward_speed: float,
+    case_label: str | None = None,
+) -> Any:
+    """Create a dataset of BEM results for a given body and conditions."""
+    bem_solver = cpt.BEMSolver()
+    problems = _build_bem_problems(body, omegas, wave_directions, water_depth, water_level, forward_speed)
+
+    total_problems = len(problems)
+    label_prefix = f"[{case_label}] " if case_label else ""
+    logger.info(f"{label_prefix}Starting BEM solve for {total_problems} problems.")
+
+    results = []
+    start_time = time.perf_counter()
+    progress_step = max(1, total_problems // 20)  # Roughly every 5%
+    for idx, problem in enumerate(problems, start=1):
+        problem_name = type(problem).__name__
+        omega_val = getattr(problem, "omega", None)
+        wave_direction = getattr(problem, "wave_direction", None)
+        radiating_dof = getattr(problem, "radiating_dof", None)
+        detail_bits = [problem_name]
+        if omega_val is not None:
+            detail_bits.append(f"omega={omega_val:.4f}")
+        if wave_direction is not None:
+            detail_bits.append(f"beta={wave_direction:.4f}")
+        if radiating_dof is not None:
+            detail_bits.append(f"dof={radiating_dof}")
+        logger.info(
+            "%sSolving %d/%d: %s",
+            label_prefix,
+            idx,
+            total_problems,
+            ", ".join(detail_bits),
+        )
+        results.append(bem_solver.solve(problem))
+
+        if idx == 1 or idx == total_problems or idx % progress_step == 0:
+            elapsed = max(time.perf_counter() - start_time, 1e-9)
+            rate = idx / elapsed
+            remaining = (total_problems - idx) / rate if rate > 0 else 0.0
+            progress_pct = 100.0 * idx / total_problems
+            logger.info(
+                "%sBEM progress: %d/%d (%.1f%%), elapsed %.1fs, ETA %.1fs",
+                label_prefix,
+                idx,
+                total_problems,
+                progress_pct,
+                elapsed,
+                remaining,
+            )
 
     database = cpt.assemble_dataset(results)
 
@@ -487,12 +544,32 @@ def _validate_single_case_dhyd_export(settings: SimulationSettings, mesh_count: 
     del settings, mesh_count
 
 
-def _write_case_to_dhyd(database: xr.Dataset, dhyd_file: Path) -> None:
+def _write_case_to_dhyd(database: xr.Dataset, dhyd_file: Path, heading_symmetry: bool = False) -> None:
     """Writes one case to a standalone mafredo hydrodynamic database (.dhyd)."""
     hyddb = create_hyd_from_capytaine_data(database)
 
+    # Keep mafredo heading symmetry metadata explicit in exported .dhyd files.
+    hyddb.symmetry = mafredo.Symmetry.XZ if heading_symmetry else mafredo.Symmetry.No
+
     dhyd_file.parent.mkdir(parents=True, exist_ok=True)
     hyddb.save_as(dhyd_file)
+
+
+def _normalize_wave_directions_for_xz_heading_symmetry(wave_directions_deg: list[float]) -> list[float]:
+    """Map headings to the XZ symmetry domain [0, 180] and remove near-duplicates."""
+    normalized: list[float] = []
+    for direction in wave_directions_deg:
+        folded = float(direction) % 360.0
+        if folded > 180.0:
+            folded = 360.0 - folded
+
+        if np.isclose(folded, 360.0):
+            folded = 0.0
+
+        if not any(np.isclose(folded, existing) for existing in normalized):
+            normalized.append(folded)
+
+    return normalized
 
 
 def _resolve_output_dhyd_path(
@@ -765,6 +842,14 @@ def _run_pipeline_for_mesh(
     directions_to_use = engine_mesh.config.wave_directions or settings.wave_directions
     wave_directions_deg_untyped = directions_to_use if isinstance(directions_to_use, list) else [directions_to_use]
     wave_directions_deg = [float(d) for d in wave_directions_deg_untyped]
+    if settings.heading_symmetry:
+        original_direction_count = len(wave_directions_deg)
+        wave_directions_deg = _normalize_wave_directions_for_xz_heading_symmetry(wave_directions_deg)
+        logger.info(
+            "Heading symmetry enabled: reduced wave directions from %d to %d values in [0, 180] deg.",
+            original_direction_count,
+            len(wave_directions_deg),
+        )
     wave_directions_rad = np.deg2rad(wave_directions_deg).tolist()
 
     water_depths_untyped = settings.water_depth if isinstance(settings.water_depth, list) else [settings.water_depth]
@@ -801,6 +886,7 @@ def _run_pipeline_for_mesh(
         combine_cases=settings.combine_cases,
         output_dhyd_file=Path(settings.output_dhyd_file) if settings.output_dhyd_file else None,
         export_to_hyd=settings.export_to_hyd,
+        heading_symmetry=settings.heading_symmetry,
         export_transformed_stl=settings.export_transformed_stl,
         output_transformed_stl_directory=(
             Path(settings.output_transformed_stl_directory) if settings.output_transformed_stl_directory else None
@@ -817,7 +903,9 @@ def _process_and_save_single_case(
     output_file: Path,
     output_dhyd_file: Path | None,
     export_to_hyd: bool,
+    heading_symmetry: bool,
     origin_translation: npt.NDArray[np.float64] | None,
+    case_label: str,
 ) -> Any:
     """Process a single simulation case and save its results to the HDF5 file."""
     group_name = _generate_case_group_name(
@@ -843,7 +931,7 @@ def _process_and_save_single_case(
         transformation_matrix = trimesh.transformations.translation_matrix(translation_vector)
 
     logger.info(
-        f"Starting BEM calculations for water_level={case_params['water_level']}, "
+        f"{case_label} Starting BEM calculations for water_level={case_params['water_level']}, "
         f"water_depth={case_params['water_depth']}, forward_speed={case_params['forward_speed']}"
     )
     # Select only the parameters that make_database expects.
@@ -854,7 +942,7 @@ def _process_and_save_single_case(
         "water_level": case_params["water_level"],
         "forward_speed": case_params["forward_speed"],
     }
-    database = make_database(body=boat, **db_params)
+    database = make_database(body=boat, case_label=case_label, **db_params)
 
     if not case_params["combine_cases"]:
         logger.info(f"Writing simulation results to group '{group_name}' in HDF5 file: {output_file}")
@@ -867,7 +955,7 @@ def _process_and_save_single_case(
 
     if resolved_output_dhyd_file is not None:
         logger.info(f"Writing standalone .dhyd file: {resolved_output_dhyd_file}")
-        _write_case_to_dhyd(database, resolved_output_dhyd_file)
+        _write_case_to_dhyd(database, resolved_output_dhyd_file, heading_symmetry=heading_symmetry)
 
     logger.debug(f"Successfully wrote data for case to group {group_name}.")
     return database
@@ -887,6 +975,7 @@ def process_all_cases_for_one_stl(
     combine_cases: bool = False,
     output_dhyd_file: Path | None = None,
     export_to_hyd: bool = False,
+    heading_symmetry: bool = False,
     export_transformed_stl: bool = False,
     output_transformed_stl_directory: Path | None = None,
     overwrite_meshes: bool = False,
@@ -915,7 +1004,15 @@ def process_all_cases_for_one_stl(
 
     all_datasets = []
 
-    for water_level, water_depth, forward_speed in product(water_levels, water_depths, forwards_speeds):
+    all_cases = list(product(water_levels, water_depths, forwards_speeds))
+    total_cases = len(all_cases)
+
+    for case_index, (water_level, water_depth, forward_speed) in enumerate(all_cases, start=1):
+        case_label = f"Case {case_index}/{total_cases}"
+        logger.info(
+            f"{case_label}: wl={water_level}, wd={water_depth}, fs={forward_speed} for mesh '{engine_mesh.name}'"
+        )
+
         case_params = {
             "omegas": wave_frequencies,
             "wave_directions": wave_directions,
@@ -932,7 +1029,9 @@ def process_all_cases_for_one_stl(
             output_file,
             output_dhyd_file,
             export_to_hyd,
+            heading_symmetry,
             origin_translation,
+            case_label,
         )
         if combine_cases and result_db is not None:
             all_datasets.append(result_db)

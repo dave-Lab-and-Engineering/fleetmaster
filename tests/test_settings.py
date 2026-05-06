@@ -49,3 +49,19 @@ def test_water_level_accepts_dot_inf_scalar() -> None:
 def test_water_level_accepts_inf_scalar() -> None:
     settings = _make_settings(water_level="inf")
     assert settings.water_level == np.inf
+
+
+def test_heading_symmetry_without_grid_symmetry_logs_warning(caplog) -> None:
+    with caplog.at_level("WARNING"):
+        settings = _make_settings(heading_symmetry=True, grid_symmetry=False)
+
+    assert settings.heading_symmetry is True
+    assert "heading_symmetry is enabled while grid_symmetry is disabled" in caplog.text
+
+
+def test_heading_symmetry_with_grid_symmetry_no_warning(caplog) -> None:
+    with caplog.at_level("WARNING"):
+        settings = _make_settings(heading_symmetry=True, grid_symmetry=True)
+
+    assert settings.heading_symmetry is True
+    assert "heading_symmetry is enabled while grid_symmetry is disabled" not in caplog.text

@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import numpy as np
@@ -11,6 +12,7 @@ from fleetmaster.core.exceptions import (
 )
 
 MESH_GROUP_NAME = "meshes"
+logger = logging.getLogger(__name__)
 
 
 def _parse_special_float_value(value: Any) -> Any:
@@ -123,6 +125,13 @@ class SimulationSettings(BaseModel):
     lid: bool = False
     add_center_of_mass: bool = False
     grid_symmetry: bool = False
+    heading_symmetry: bool = Field(
+        default=False,
+        description=(
+            "If True, wave headings are reduced to the XZ symmetry domain [0, 180] degrees "
+            "before solving. Use this together with grid_symmetry for half-mesh workflows."
+        ),
+    )
     water_depth: float | list[float] = np.inf
     water_level: float | list[float] = 0.0
     overwrite_meshes: bool = Field(default=False, description="Overwrite existing meshes in the database.")
@@ -191,5 +200,12 @@ class SimulationSettings(BaseModel):
         """Validate that lid and grid_symmetry are not both enabled."""
         if self.lid and self.grid_symmetry:
             raise LidAndSymmetryEnabledError()
+
+        if self.heading_symmetry and not self.grid_symmetry:
+            logger.warning(
+                "heading_symmetry is enabled while grid_symmetry is disabled. "
+                "This is allowed, but for physical consistency and maximum speedup "
+                "you should typically enable both."
+            )
 
         return self
