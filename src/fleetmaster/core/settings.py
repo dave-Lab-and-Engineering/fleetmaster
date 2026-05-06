@@ -73,6 +73,17 @@ class SimulationSettings(BaseModel):
             "Only supported when exactly one mesh and one simulation case are configured."
         ),
     )
+    export_transformed_stl: bool = Field(
+        default=False,
+        description=("Export the final transformed mesh that is written to HDF5 also as a standalone .stl file."),
+    )
+    output_transformed_stl_directory: str | None = Field(
+        default=None,
+        description=(
+            "Optional output directory for transformed STL exports. If omitted, files are written to "
+            "<output_directory>/transformed_stl."
+        ),
+    )
     export_to_hyd: bool = Field(
         default=False,
         description=(

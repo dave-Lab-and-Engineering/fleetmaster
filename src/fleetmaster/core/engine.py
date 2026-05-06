@@ -401,6 +401,31 @@ def add_mesh_to_database(
         _write_mesh_to_group(group, mesh_to_add, mesh_config, new_hash, new_stl_content)
 
 
+def _export_transformed_mesh_to_stl(
+    mesh_to_export: trimesh.Trimesh,
+    mesh_name: str,
+    output_file: Path,
+    output_directory: Path | None,
+    overwrite: bool,
+) -> Path | None:
+    """Export the final transformed mesh to a standalone STL file."""
+    if not isinstance(mesh_to_export, trimesh.Trimesh) or mesh_to_export.is_empty:
+        logger.warning(f"Skipping STL export for '{mesh_name}' because mesh is empty or invalid.")
+        return None
+
+    export_dir = output_directory if output_directory is not None else output_file.parent / "transformed_stl"
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+    stl_path = export_dir / f"{mesh_name}.stl"
+    if stl_path.exists() and not overwrite:
+        logger.info(f"Transformed STL '{stl_path}' already exists. Skipping export.")
+        return stl_path
+
+    mesh_to_export.export(stl_path)
+    logger.info(f"Exported transformed STL to '{stl_path}'.")
+    return stl_path
+
+
 def _format_value_for_name(value: float) -> str:
     """Formats a float for use in a group name."""
     if value == np.inf:
@@ -747,6 +772,11 @@ def _run_pipeline_for_mesh(
         combine_cases=settings.combine_cases,
         output_dhyd_file=Path(settings.output_dhyd_file) if settings.output_dhyd_file else None,
         export_to_hyd=settings.export_to_hyd,
+        export_transformed_stl=settings.export_transformed_stl,
+        output_transformed_stl_directory=(
+            Path(settings.output_transformed_stl_directory) if settings.output_transformed_stl_directory else None
+        ),
+        overwrite_meshes=settings.overwrite_meshes,
         origin_translation=origin_translation,
     )
 
@@ -828,6 +858,9 @@ def process_all_cases_for_one_stl(
     combine_cases: bool = False,
     output_dhyd_file: Path | None = None,
     export_to_hyd: bool = False,
+    export_transformed_stl: bool = False,
+    output_transformed_stl_directory: Path | None = None,
+    overwrite_meshes: bool = False,
     origin_translation: npt.NDArray[np.float64] | None = None,
 ) -> None:
     # 1. Use the prepared (and possibly translated) geometry to create the Capytaine body
@@ -842,6 +875,14 @@ def process_all_cases_for_one_stl(
         add_mesh_to_database(
             output_file, final_mesh, engine_mesh.name, overwrite=update_cases, mesh_config=engine_mesh.config
         )
+        if export_transformed_stl:
+            _export_transformed_mesh_to_stl(
+                mesh_to_export=final_mesh,
+                mesh_name=engine_mesh.name,
+                output_file=output_file,
+                output_directory=output_transformed_stl_directory,
+                overwrite=overwrite_meshes,
+            )
 
     all_datasets = []
 

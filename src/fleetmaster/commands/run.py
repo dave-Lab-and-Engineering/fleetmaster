@@ -203,6 +203,13 @@ def _resolve_paths_in_config(config: dict[str, Any], settings_dir: Path) -> None
     # Resolve optional standalone export paths
     if config.get("output_dhyd_file") and not Path(config["output_dhyd_file"]).is_absolute():
         config["output_dhyd_file"] = str((settings_dir / config["output_dhyd_file"]).resolve())
+    if (
+        config.get("output_transformed_stl_directory")
+        and not Path(config["output_transformed_stl_directory"]).is_absolute()
+    ):
+        config["output_transformed_stl_directory"] = str(
+            (settings_dir / config["output_transformed_stl_directory"]).resolve()
+        )
 
     # Resolve stl_files paths
     if "stl_files" not in config:

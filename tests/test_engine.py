@@ -9,6 +9,7 @@ import xarray as xr
 
 from fleetmaster.core.engine import (
     EngineMesh,
+    _export_transformed_mesh_to_stl,
     _format_value_for_name,
     _generate_case_group_name,
     _prepare_capytaine_body,
@@ -189,6 +190,47 @@ def test_add_mesh_to_database_overwrite_warning(mock_h5py_file, caplog):
     # Assert
     assert "is different from the one in the database" in caplog.text
     mock_file.create_group.assert_not_called()
+
+
+def test_export_transformed_mesh_to_stl_default_directory(tmp_path: Path):
+    mesh = trimesh.creation.box()
+    output_file = tmp_path / "results.hdf5"
+
+    result = _export_transformed_mesh_to_stl(
+        mesh_to_export=mesh,
+        mesh_name="mesh_a",
+        output_file=output_file,
+        output_directory=None,
+        overwrite=False,
+    )
+
+    assert result == tmp_path / "transformed_stl" / "mesh_a.stl"
+    assert result.exists()
+
+
+def test_export_transformed_mesh_to_stl_respects_overwrite_flag(tmp_path: Path):
+    mesh = trimesh.creation.box()
+    output_file = tmp_path / "results.hdf5"
+    target_dir = tmp_path / "exports"
+
+    first = _export_transformed_mesh_to_stl(
+        mesh_to_export=mesh,
+        mesh_name="mesh_b",
+        output_file=output_file,
+        output_directory=target_dir,
+        overwrite=False,
+    )
+    initial_mtime = first.stat().st_mtime
+
+    second = _export_transformed_mesh_to_stl(
+        mesh_to_export=mesh,
+        mesh_name="mesh_b",
+        output_file=output_file,
+        output_directory=target_dir,
+        overwrite=False,
+    )
+    assert second == first
+    assert second.stat().st_mtime == initial_mtime
 
 
 @pytest.mark.parametrize(
