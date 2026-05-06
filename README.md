@@ -81,7 +81,7 @@ Notes:
 - With an explicit `output_dhyd_file` and multiple cases, Fleetmaster uses that filename as a base and appends the case name.
 - If a case already exists in the HDF5 and `update_cases` is disabled, that case is skipped.
 
-### 3) Inspect cases or plot a theta/period grid
+### 2) Inspect cases or plot a theta/period grid
 
 List simulation cases:
 
@@ -101,7 +101,31 @@ Write the plot to a specific PNG:
 uv run fleetmaster plot results.hdf5 boxship_wd_inf_wl_0_fs_0 --output boxship_grid.png
 ```
 
-### 2) Export `.dhyd` from an existing HDF5 database (without rerunning Capytaine)
+Create additional hydrodynamic plots using mafredo (enabled by default):
+
+```bash
+uv run fleetmaster plot results.hdf5 boxship_wd_inf_wl_0_fs_0 --show
+```
+
+Save the mafredo hydrodynamic figures as PNG files:
+
+```bash
+uv run fleetmaster plot results.hdf5 boxship_wd_inf_wl_0_fs_0 --save-hyd-plots
+```
+
+Write mafredo hydrodynamic figures to a custom directory:
+
+```bash
+uv run fleetmaster plot results.hdf5 boxship_wd_inf_wl_0_fs_0 --save-hyd-plots --hyd-output-dir output/hyd_plots
+```
+
+Disable mafredo hydrodynamic plotting and keep only the theta/period grid plot:
+
+```bash
+uv run fleetmaster plot results.hdf5 boxship_wd_inf_wl_0_fs_0 --no-hyd-plot
+```
+
+### 3) Export `.dhyd` from an existing HDF5 database (without rerunning Capytaine)
 
 List cases in an existing HDF5:
 

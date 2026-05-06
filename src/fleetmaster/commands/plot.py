@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import click
 import h5py
 import numpy as np
 import xarray as xr
+
+from fleetmaster.core.engine import create_hyd_from_capytaine_data
 
 
 def _resolve_plot_case_name(hdf5_file: Path, case_name: str | None) -> str:
@@ -63,6 +66,28 @@ def _default_plot_output_path(hdf5_file: Path, case_name: str) -> Path:
     return hdf5_file.with_name(f"{case_name}_grid.png")
 
 
+def _default_hyd_plot_output_dir(hdf5_file: Path) -> Path:
+    """Return the default output directory for mafredo hydrodynamic plots."""
+    return hdf5_file.parent / "hyd_plots"
+
+
+def _save_hyd_plot_figures(figures: Any, output_dir: Path, case_name: str) -> list[Path]:
+    """Save matplotlib figures returned by mafredo Hyddb1.plot."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    figure_items = list(figures) if isinstance(figures, (list, tuple)) else [figures]
+
+    saved_paths: list[Path] = []
+    for index, figure in enumerate(figure_items, start=1):
+        if not hasattr(figure, "savefig"):
+            continue
+        out_path = output_dir / f"{case_name}_hyd_{index:02d}.png"
+        figure.savefig(out_path, dpi=180)
+        saved_paths.append(out_path)
+
+    return saved_paths
+
+
 def _plot_theta_period_grid(
     periods: np.ndarray, directions_deg: np.ndarray, coverage: np.ndarray, case_name: str, output_path: Path
 ) -> Path:
@@ -108,17 +133,50 @@ def _plot_theta_period_grid(
     help="Output PNG path. Defaults to <case_name>_grid.png next to the HDF5 file.",
 )
 @click.option("--show", is_flag=True, help="Also open the plot interactively after saving it.")
-def plot(hdf5_file: str, case_name: str | None, output_file: str | None, show: bool) -> None:
+@click.option("--hyd-plot/--no-hyd-plot", default=True, help="Also create mafredo hydrodynamic plots.")
+@click.option(
+    "--save-hyd-plots",
+    is_flag=True,
+    help="Save the mafredo hydrodynamic plots as PNG files.",
+)
+@click.option(
+    "--hyd-output-dir",
+    default=None,
+    type=click.Path(file_okay=False, resolve_path=True),
+    help="Output directory for saved mafredo hydrodynamic plots.",
+)
+def plot(
+    hdf5_file: str,
+    case_name: str | None,
+    output_file: str | None,
+    show: bool,
+    hyd_plot: bool,
+    save_hyd_plots: bool,
+    hyd_output_dir: str | None,
+) -> None:
     """Create a quick theta/period coverage plot for one simulation case."""
     db_path = Path(hdf5_file)
     selected_case = _resolve_plot_case_name(db_path, case_name)
     output_path = _default_plot_output_path(db_path, selected_case) if output_file is None else Path(output_file)
 
     with xr.open_dataset(db_path, group=selected_case, engine="h5netcdf") as dataset:
+        loaded_dataset = dataset.load()
         periods, directions_deg, coverage = _extract_grid_coverage(dataset)
 
     saved_path = _plot_theta_period_grid(periods, directions_deg, coverage, selected_case, output_path)
     click.echo(f"✅ Saved grid plot to '{saved_path}'.")
+
+    if hyd_plot:
+        hyd = create_hyd_from_capytaine_data(loaded_dataset)
+        figures = hyd.plot(do_show=show)
+
+        if save_hyd_plots:
+            output_dir = _default_hyd_plot_output_dir(db_path) if hyd_output_dir is None else Path(hyd_output_dir)
+            saved_hyd_paths = _save_hyd_plot_figures(figures, output_dir, selected_case)
+            if saved_hyd_paths:
+                click.echo(f"✅ Saved {len(saved_hyd_paths)} hydrodynamic plot(s) to '{output_dir}'.")
+            else:
+                click.echo("⚠️ No hydrodynamic plot figures were returned by mafredo to save.")
 
     if show:
         import matplotlib.pyplot as plt

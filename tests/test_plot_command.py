@@ -6,9 +6,11 @@ import xarray as xr
 from click import UsageError
 
 from fleetmaster.commands.plot import (
+    _default_hyd_plot_output_dir,
     _default_plot_output_path,
     _extract_grid_coverage,
     _resolve_plot_case_name,
+    _save_hyd_plot_figures,
 )
 
 
@@ -39,6 +41,31 @@ def test_extract_grid_coverage_from_excitation_force() -> None:
 def test_default_plot_output_path(tmp_path: Path) -> None:
     hdf5_file = tmp_path / "results.hdf5"
     assert _default_plot_output_path(hdf5_file, "case_a") == tmp_path / "case_a_grid.png"
+
+
+def test_default_hyd_plot_output_dir(tmp_path: Path) -> None:
+    hdf5_file = tmp_path / "results.hdf5"
+    assert _default_hyd_plot_output_dir(hdf5_file) == tmp_path / "hyd_plots"
+
+
+def test_save_hyd_plot_figures(tmp_path: Path) -> None:
+    class DummyFigure:
+        def __init__(self) -> None:
+            self.saved_paths: list[Path] = []
+
+        def savefig(self, path: Path, dpi: int = 180) -> None:
+            del dpi
+            path.write_text("dummy")
+            self.saved_paths.append(path)
+
+    figures = [DummyFigure(), DummyFigure()]
+    saved_paths = _save_hyd_plot_figures(figures, tmp_path / "hyd_plots", "case_a")
+
+    assert len(saved_paths) == 2
+    assert saved_paths[0].name == "case_a_hyd_01.png"
+    assert saved_paths[1].name == "case_a_hyd_02.png"
+    assert saved_paths[0].exists()
+    assert saved_paths[1].exists()
 
 
 def test_resolve_plot_case_name_single_case(tmp_path: Path) -> None:
