@@ -10,6 +10,7 @@ import xarray as xr
 from fleetmaster.core.engine import (
     EngineMesh,
     _clip_mesh_at_waterplane,
+    _create_bem_solver,
     _export_transformed_mesh_to_stl,
     _format_value_for_name,
     _generate_case_group_name,
@@ -108,6 +109,32 @@ def test_normalize_wave_directions_for_xz_heading_symmetry_deduplicates() -> Non
     normalized = _normalize_wave_directions_for_xz_heading_symmetry(directions)
 
     assert normalized == [0.0, 170.0]
+
+
+@patch("fleetmaster.core.engine.cpt")
+def test_create_bem_solver_uses_fortran_prony_for_finite_depth(mock_cpt) -> None:
+    mock_solver = MagicMock()
+    mock_green_function = MagicMock()
+    mock_cpt.Delhommeau.return_value = mock_green_function
+    mock_cpt.BEMSolver.return_value = mock_solver
+
+    result = _create_bem_solver(1.8)
+
+    assert result == mock_solver
+    mock_cpt.Delhommeau.assert_called_once_with(finite_depth_prony_decomposition_method="fortran")
+    mock_cpt.BEMSolver.assert_called_once_with(green_function=mock_green_function)
+
+
+@patch("fleetmaster.core.engine.cpt")
+def test_create_bem_solver_uses_default_solver_for_infinite_depth(mock_cpt) -> None:
+    mock_solver = MagicMock()
+    mock_cpt.BEMSolver.return_value = mock_solver
+
+    result = _create_bem_solver(np.inf)
+
+    assert result == mock_solver
+    mock_cpt.Delhommeau.assert_not_called()
+    mock_cpt.BEMSolver.assert_called_once_with()
 
 
 @patch("fleetmaster.core.engine.cpt")

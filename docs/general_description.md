@@ -65,3 +65,19 @@ graph LR
     B --> C[Run fleetmaster];
     C --> D[Analyze Results];
 ```
+
+## Symmetry Setting for `.dhyd`
+
+If you export to `.dhyd`, you can store heading symmetry metadata by enabling:
+
+```yaml
+heading_symmetry: true
+```
+
+For physically consistent half-domain workflows, also enable:
+
+```yaml
+grid_symmetry: true
+```
+
+When `heading_symmetry` is enabled, Fleetmaster writes XZ symmetry metadata in the `.dhyd` output.

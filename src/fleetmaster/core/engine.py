@@ -43,6 +43,18 @@ class EngineMesh:
         )
 
 
+def _create_bem_solver(water_depth: float) -> Any:
+    """Create a Capytaine solver with a robust finite-depth Green function setup."""
+    if np.isfinite(water_depth):
+        logger.info(
+            "Using Delhommeau finite-depth Green function with Fortran Prony decomposition for water_depth=%s.",
+            water_depth,
+        )
+        return cpt.BEMSolver(green_function=cpt.Delhommeau(finite_depth_prony_decomposition_method="fortran"))
+
+    return cpt.BEMSolver()
+
+
 def _build_bem_problems(
     body: Any,
     omegas: list | npt.NDArray[np.float64],
@@ -92,7 +104,7 @@ def make_database(
     case_label: str | None = None,
 ) -> Any:
     """Create a dataset of BEM results for a given body and conditions."""
-    bem_solver = cpt.BEMSolver()
+    bem_solver = _create_bem_solver(water_depth)
     problems = _build_bem_problems(body, omegas, wave_directions, water_depth, water_level, forward_speed)
 
     total_problems = len(problems)

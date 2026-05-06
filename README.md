@@ -81,6 +81,22 @@ Notes:
 - With an explicit `output_dhyd_file` and multiple cases, Fleetmaster uses that filename as a base and appends the case name.
 - If a case already exists in the HDF5 and `update_cases` is disabled, that case is skipped.
 
+### Symmetry in `.dhyd` output
+
+To write heading symmetry metadata to the generated `.dhyd` file, set:
+
+```yaml
+heading_symmetry: true
+```
+
+Recommended in combination with:
+
+```yaml
+grid_symmetry: true
+```
+
+With `heading_symmetry: true`, Fleetmaster writes XZ heading symmetry metadata to `.dhyd`.
+
 ### 2) Inspect cases or plot a theta/period grid
 
 List simulation cases:
