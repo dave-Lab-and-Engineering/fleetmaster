@@ -14,6 +14,7 @@ from fleetmaster.core.engine import (
     _export_transformed_mesh_to_stl,
     _format_value_for_name,
     _generate_case_group_name,
+    _load_or_generate_mesh,
     _normalize_wave_directions_for_xz_heading_symmetry,
     _prepare_capytaine_body,
     _process_single_stl,
@@ -438,6 +439,29 @@ def test_process_single_stl_lid_and_symmetry_error(mock_settings):
             Path("out.h5"),
             origin_translation=None,
         )
+
+
+@patch("fleetmaster.core.engine._prepare_trimesh_geometry")
+def test_load_or_generate_mesh_existing_target_skips_second_transform(mock_prepare: MagicMock, tmp_path: Path):
+    base_mesh = tmp_path / "base.stl"
+    target_mesh = tmp_path / "target.stl"
+    base_mesh.touch()
+    target_mesh.touch()
+
+    settings = SimulationSettings(
+        stl_files=[MeshConfig(file=str(target_mesh), translation=[-42.8, 0.0, -0.791])],
+        base_mesh=str(base_mesh),
+        wave_periods=[10.0],
+        wave_directions=[0.0],
+    )
+    mesh_config = settings.stl_files[0]
+    mock_mesh = MagicMock(spec=trimesh.Trimesh)
+    mock_prepare.return_value = mock_mesh
+
+    result = _load_or_generate_mesh("target", mesh_config, settings)
+
+    assert result == mock_mesh
+    mock_prepare.assert_called_once_with(stl_file=str(target_mesh))
 
 
 @patch("fleetmaster.core.engine._prepare_trimesh_geometry")

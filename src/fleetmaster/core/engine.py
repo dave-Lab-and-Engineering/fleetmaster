@@ -715,8 +715,19 @@ def _load_or_generate_mesh(mesh_name: str, mesh_config: MeshConfig, settings: Si
     target_stl_path = Path(mesh_config.file)
 
     if target_stl_path.exists():
+        base_mesh_path = Path(settings.base_mesh).resolve() if settings.base_mesh else None
+        target_path_resolved = target_stl_path.resolve()
+
+        if base_mesh_path is not None and target_path_resolved != base_mesh_path:
+            logger.info(
+                f"Found existing target STL file: '{target_stl_path}'. "
+                "Loading without extra transformations to avoid applying translation/rotation twice."
+            )
+            return _prepare_trimesh_geometry(stl_file=str(target_stl_path))
+
         logger.info(f"Found existing STL file: '{target_stl_path}'. Loading and applying transformations.")
-        # Load the existing STL and apply its specific transformations.
+        # For direct STL workflows (without a separate generated target),
+        # apply mesh-specific transformations at load time.
         return _prepare_trimesh_geometry(stl_file=str(target_stl_path), mesh_config=mesh_config)
 
     # If the STL file does not exist, generate it from the base mesh.
