@@ -34,6 +34,14 @@ def _parse_special_float_value(value: Any) -> Any:
         return value
 
 
+def _raise_invalid_range_string_error(value: str, cause: ValueError | None = None) -> None:
+    """Raise a consistent ValueError for malformed range expressions."""
+    msg = f"Invalid range string format: {value}"
+    if cause is None:
+        raise ValueError(msg)
+    raise ValueError(msg) from cause
+
+
 class MeshConfig(BaseModel):
     """Configuration for a single mesh, including its path and transformation."""
 
@@ -146,12 +154,21 @@ class SimulationSettings(BaseModel):
     @field_validator("wave_periods", "wave_directions", mode="before")
     def parse_range_string(cls, v: Any) -> list[float]:
         if isinstance(v, str):
+            # Support both a single range ("start:stop:step") and
+            # comma-separated compound ranges ("a:b:s,c:d:s").
             try:
-                start, stop, step = map(float, v.split(":"))
-                return np.arange(start, stop, step).tolist()
+                values: list[float] = []
+                range_specs = [segment.strip() for segment in v.split(",") if segment.strip()]
+                if not range_specs:
+                    _raise_invalid_range_string_error(v)
+
+                for spec in range_specs:
+                    start, stop, step = map(float, spec.split(":"))
+                    values.extend(np.arange(start, stop, step).tolist())
             except ValueError as e:
-                msg = f"Invalid range string format: {v}"
-                raise ValueError(msg) from e
+                _raise_invalid_range_string_error(v, cause=e)
+            else:
+                return values
         if isinstance(v, (int, float)):
             return [v]
         if isinstance(v, list):

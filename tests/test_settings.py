@@ -65,3 +65,36 @@ def test_heading_symmetry_with_grid_symmetry_no_warning(caplog) -> None:
 
     assert settings.heading_symmetry is True
     assert "heading_symmetry is enabled while grid_symmetry is disabled" not in caplog.text
+
+
+def test_wave_periods_accepts_compound_range_string() -> None:
+    settings = _make_settings(wave_periods="1:11.1:1,12:30:2")
+
+    assert settings.wave_periods == [
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+        11.0,
+        12.0,
+        14.0,
+        16.0,
+        18.0,
+        20.0,
+        22.0,
+        24.0,
+        26.0,
+        28.0,
+    ]
+
+
+def test_wave_directions_accepts_compound_range_string() -> None:
+    settings = _make_settings(wave_directions="0:91:45,180:271:45")
+
+    assert settings.wave_directions == [0.0, 45.0, 90.0, 180.0, 225.0, 270.0]
