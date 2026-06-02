@@ -621,8 +621,8 @@ def list_case_groups_in_hdf5(hdf5_file: str | Path) -> list[str]:
         msg = f"HDF5 database not found: {hdf5_path}"
         raise FileNotFoundError(msg)
 
-    with h5py.File(hdf5_path, "r") as f:
-        return sorted(name for name in f if name != MESH_GROUP_NAME)
+    with h5py.File(hdf5_path, "r") as stream:
+        return sorted(str(name) for name in stream if name is not None and name != MESH_GROUP_NAME)
 
 
 def export_hdf5_case_to_dhyd(
@@ -644,9 +644,9 @@ def export_hdf5_case_to_dhyd(
         msg = f"Output .dhyd file already exists: {output_path}. Use --overwrite to replace it."
         raise FileExistsError(msg)
 
-    with h5py.File(hdf5_path, "r") as f:
-        if case_group not in f:
-            available = sorted(name for name in f if name != MESH_GROUP_NAME)
+    with h5py.File(hdf5_path, "r") as stream:
+        if case_group not in stream:
+            available = sorted(str(name) for name in stream if name != MESH_GROUP_NAME)
             msg = (
                 f"Case group '{case_group}' not found in {hdf5_path}. "
                 f"Available cases: {available if available else 'none'}"

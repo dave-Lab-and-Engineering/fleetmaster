@@ -189,7 +189,7 @@ class SimulationSettings(BaseModel):
             return v
         return [MeshConfig(file=item) if isinstance(item, str) else item for item in v]
 
-    # field validator checks the value of one specific field inmediately
+    # field validator checks the value of one specific field immediately
     @field_validator("forward_speed")
     def speed_must_be_non_negative(cls, v: float | list[float]) -> float | list[float]:
         """Validate that forward speed is non-negative."""
