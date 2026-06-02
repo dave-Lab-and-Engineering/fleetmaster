@@ -868,7 +868,7 @@ requires-dist = [
     { name = "rich", specifier = ">=14.2.0" },
     { name = "scipy", specifier = ">=1.10" },
     { name = "trimesh", specifier = ">=4.8.3" },
-    { name = "vtk", specifier = ">=9.3" },
+    { name = "vtk", specifier = ">=9.4.2" },
     { name = "xarray", specifier = ">=2025.6.1" },
 ]
 provides-extras = ["gui"]

@@ -15,15 +15,17 @@ from fleetmaster.core.io import load_meshes_from_hdf5
 
 logger = logging.getLogger(__name__)
 
-# Try to import vtk, but make it an optional dependency
+# Try to import vtk, but make it an optional dependency.
 try:
     import vtk
     from vtk.util.numpy_support import numpy_to_vtk
 
     VTK_AVAILABLE = True
+    VTK_IMPORT_ERROR: Exception | None = None
     # The global import of numpy is sufficient.
-except ImportError:
+except ImportError as exc:
     VTK_AVAILABLE = False
+    VTK_IMPORT_ERROR = exc
 
 VTK_COLORS = [
     (0.8, 0.8, 1.0),  # Light Blue
@@ -64,7 +66,12 @@ def _vtk_actor_from_trimesh(mesh: trimesh.Trimesh, color: tuple[float, float, fl
 def show_with_vtk(meshes: list[Trimesh]) -> None:
     """Visualizes the mesh using a VTK pipeline."""
     if not VTK_AVAILABLE:
-        click.echo("❌ Error: The 'vtk' library is not installed. Please install it with 'pip install vtk'.")
+        message = "❌ Error: VTK could not be imported."
+        if VTK_IMPORT_ERROR is not None:
+            message = f"{message} {VTK_IMPORT_ERROR}"
+        click.echo(message)
+        click.echo("VTK is installed, but one of its native dependencies failed to load.")
+        click.echo("On Windows, this usually means a missing or incompatible DLL/runtime.")
         return
 
     click.echo(f"🎨 Displaying {len(meshes)} mesh(es) with VTK viewer. Close the window to continue.")

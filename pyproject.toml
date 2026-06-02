@@ -34,9 +34,9 @@ dependencies = [
     "rich>=14.2.0",
     "scipy>=1.10",
     "trimesh>=4.8.3",
-    "vtk>=9.3",
     "xarray>=2025.6.1",
     "mafredo>=2025.4.0,<2026.3.0",
+    "vtk>=9.4.2",
 ]
 
 [project.optional-dependencies]
