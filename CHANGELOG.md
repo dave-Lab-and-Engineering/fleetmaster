@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-06-10
+
+### Added
+
+- A new `plot` command for visualizing the theta/period grid of a simulation case.
+- Export support for additional output formats, including `.dhyd`, `.nc`, and `.stl`.
+- A new high-level `FleetMaster` API for working with databases, fitting meshes, and retrieving the best match.
+- New examples and documentation for the GUI, fitting workflow, and export-related features.
+
+### Changed
+
+- The core engine and fitting pipeline were substantially refactored to support mesh fitting, improved stability handling, symmetry options, multirange support, and better mesh transformations.
+- Database loading and mesh handling were expanded so the stored geometry matches the final immersed mesh used by Capytaine.
+- Settings and CLI handling were updated to support the broader feature set and new output types.
+
+### Fixed
+
+- Improved compatibility with NetCDF/h5netcdf workflows and `mafredo`-related data handling.
+- Fixed several typing, linting, and static-analysis issues.
+- Resolved bugs around mesh clipping, export paths, and plotting/writing workflows.
+
 ## [0.2.1] - 2025-10-23
 
 ### Added
