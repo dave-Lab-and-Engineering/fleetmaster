@@ -1,13 +1,20 @@
-# Hydrodynamic Database GUI
+# Hyddb1 Library GUI
 
 ## Purpose
 
-This document specifies the Fleetmaster GUI for inspecting, matching, generating, and editing hydrodynamic database solutions.
+This document specifies the Fleetmaster GUI for inspecting, matching, generating, and editing Hyddb1 cases.
 
 The GUI has two goals:
 
 - provide a standalone expert workflow in Fleetmaster,
 - define a layout and interaction model that can later be reimplemented in DAVE.
+
+## Terminology
+
+- `Hyddb1 Solution`: one first-order hydrodynamic database result for one vessel state, containing added mass, damping, and wave forces in frequency domain.
+- `Hyddb1 Case`: one entry containing one Hyddb1 Solution and matching metadata.
+- `Hyddb1 Library`: an HDF5 file containing multiple Hyddb1 Cases.
+- `Candidate Case`: a Hyddb1 Case considered during matching.
 
 ## Scope
 
@@ -16,7 +23,7 @@ In scope:
 - inspecting candidate meshes and case metadata,
 - running match-or-generate for a target state,
 - comparing matching strategies,
-- editing database entries (add, delete, recompute, relabel),
+- editing Hyddb1 cases (add, delete, recompute, relabel),
 - visualizing geometry and waterline context in VTK.
 
 Out of scope:
@@ -40,13 +47,13 @@ Out of scope:
 
 - GUI calls Fleetmaster core service methods.
 - GUI does not implement matching math itself.
-- Core exposes `match_or_generate(...)` and `database_mutation(...)` APIs.
+- Core exposes `match_or_generate(...)` and `hyddb1_library_mutation(...)` APIs.
 
 ## Main user flows
 
 ### 1. Inspect existing solutions
 
-1. Open HDF5 file.
+1. Open Hyddb1 Library file (HDF5).
 2. Load candidate meshes and case entries.
 3. Select a row in case table.
 4. Show selected candidate in VTK view.
@@ -57,14 +64,14 @@ Out of scope:
 1. Enter target state (draft, heel, pitch, optional extras).
 2. Select matching strategy and thresholds.
 3. Click "Match or Generate".
-4. Fleetmaster returns selected existing solution or computes and stores a new one.
-5. GUI highlights returned solution and refreshes diagnostics.
+4. Fleetmaster returns selected existing case or computes and stores a new one.
+5. GUI highlights returned case and refreshes diagnostics.
 
 ### 3. Edit database
 
 1. Select one or more entries.
 2. Use action toolbar:
-   - Add from computed result,
+   - Add Hyddb1 case from computed result,
    - Delete selected,
    - Recompute selected,
    - Update tags/metadata.
@@ -91,7 +98,7 @@ For each match call, show:
 
 Recommended layout:
 
-- Top bar: database path, open/reload, schema status.
+- Top bar: Hyddb1 library path, open/reload, schema status.
 - Left panel: candidate mesh list, filtering, and sort controls.
 - Center: primary VTK viewport with base mesh and transformed base mesh.
 - Right panel: selected entry metadata, diagnostics, and action buttons.
@@ -150,7 +157,7 @@ Clicking a candidate mesh must open a separate inspect dialog.
 
 The inspect dialog must show:
 
-- a focused visualization of the selected candidate solution,
+- a focused visualization of the selected Hyddb1 case,
 - the transformed target mesh for comparison,
 - solution fragments or subcomponents from Capytaine output,
 - metadata for the selected candidate,
@@ -170,7 +177,7 @@ The inspect dialog is for deep inspection only and must not replace the main win
 
 Display clear error states for:
 
-- unreadable/missing HDF5 file,
+- unreadable/missing Hyddb1 library file,
 - schema mismatch,
 - failed match operation,
 - failed generation,
@@ -190,16 +197,16 @@ GUI operation log must capture:
 - timestamp,
 - user action,
 - strategy and threshold values,
-- selected/generated solution id,
+- selected/generated Hyddb1 case id,
 - duration,
 - success/failure.
 
 ## Acceptance criteria
 
-1. User can open HDF5 database and inspect candidate entries.
+1. User can open a Hyddb1 Library (HDF5) and inspect candidate cases.
 2. User can run `mesh_distance` match and obtain deterministic result.
 3. User can run `wip_z_error` match and obtain deterministic result.
-4. If no acceptable candidate exists, `match_or_generate` creates and returns a new solution.
+4. If no acceptable candidate exists, `match_or_generate` creates and returns a new Hyddb1 case.
 5. User can delete and recompute entries with confirmation.
 6. VTK view updates correctly when selection changes.
 
