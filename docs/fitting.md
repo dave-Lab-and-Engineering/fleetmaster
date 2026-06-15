@@ -29,7 +29,7 @@ The process involves the following steps:
 
 [Figure 2](#fitting) illustrates how mesh fitting works. On the left **RIGHT**, we see the same database of candidate meshes as described in the previous section. On the right **LEFT**, we have two example target meshes: Target Mesh 1 (purple) and Target Mesh 2 (cyan).
 
-**Only the submeged parts of the meshes are present, except for the base-mesh**
+**Only the submerged parts of the meshes are present, except for the base-mesh**
 
 Target Mesh 1 has no rotation and a draft very close to that of Candidate Mesh 2. We would therefore want to use the solution belonging to Candidate Mesh 2. To find this best match, the target mesh is translated and rotated according to each of our candidate meshes, but only for the XY-plane translation and the Z-axis rotation (yaw). The reason for this is that the Capytaine solution is independent of the mesh's location in the XY-plane; only the draft (Z-translation) and roll/pitch (X/Y-rotations) are relevant.
 
