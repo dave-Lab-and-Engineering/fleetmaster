@@ -36,8 +36,8 @@ In addition to the base mesh, the `/meshes` group can contain multiple **candida
 - A unique mesh name.
 - Its own geometry, stored as a dataset.
 - A `translation` and `rotation` attribute, which define its position and orientation relative to the base mesh
-- A specific `cog` (center of gravity) attribute. This `cog` is used by Capytaine as the center for the BEM (Boundary Element Method) solution.
-- **The point of application. This is the point on which the calculated forces act and relative to which the phases are calculated.** **Typical locations are the center of flotation or the center of buoyancy.**
+- A specific `poa` (point of application) attribute. This `poa` is used by Capytaine as the center for the BEM (Boundary Element Method) solution.
+- **The point of application is the point on which the calculated forces act and relative to which the phases are calculated.** **Typical locations are the center of flotation or the center of buoyancy.**
 
 The transformation from the base mesh to a candidate mesh is applied in a specific order: first, rotation is performed around the `cog`, and then translation is applied. These transformation attributes are stored for each mesh.
 
@@ -52,11 +52,11 @@ You can relate the base mesh to the real world by connecting the `base_origin` t
 
 Normally, the base mesh is not used directly to calculate hydrodynamic data with Capytaine. This is done using the candidate mesh positions.
 In [Figure 1](#database), these are represented by the green, red, and yellow boxes, labeled candidate mesh 1, 2, and 3, respectively.
-The relationship between the base mesh and a candidate mesh is defined by a translation vector, a rotation vector, and a center of gravity (CoG) vector for the mesh.
-The CoG vector does not have to correspond to the geometric center of gravity of your mesh (although this is chosen by default if no vector is provided).
-It can often be set to (0,0,0), which is typically at the center of the waterline. The CoG position is also used as the center of rotation.
+The relationship between the base mesh and a candidate mesh is defined by a translation vector, a rotation vector, and a point of application (POA) vector for the mesh.
+The POA vector does not have to correspond to the geometric center of gravity of your mesh (although this is chosen by default if no vector is provided).
+It can often be set to (0,0,0), which is typically at the center of the waterline. The POA position is also used as the center of rotation.
 
-In our example, both the red and green meshes are shifted backward so that the CoG of the mesh is at (0, 0, 0). The mesh itself is shifted downward to establish the vessel's draft. The rotation for the green and red boxes is assumed to be (0, 0, 0).
+In our example, both the red and green meshes are shifted backward so that the POA of the mesh is at (0, 0, 0). The mesh itself is shifted downward to establish the vessel's draft. The rotation for the green and red boxes is assumed to be (0, 0, 0).
 
 The yellow box shows an example of a candidate mesh that is shifted downward and given a small positive rotation about the y-axis. This is stored in the rotation vector belonging to the yellow mesh.
 
@@ -145,8 +145,8 @@ The `/meshes` group contains a subgroup for each mesh.
 |                    | `stl_content`                   | The binary content of the STL file for the mesh.         |
 | **Attributes**     | `name`                          | Name of the mesh.                                        |
 |                    | `bbox_lx`, `bbox_ly`, `bbox_lz` | Dimensions of the bounding box.                          |
-|                    | `cog`                           | Center of gravity used by Capytaine `[x, y, z]`.         |
-|                    | `cog_x`, `cog_y`, `cog_z`       | Individual components of the center of gravity.          |
+|                    | `poa`                           | Point of application used by Capytaine `[x, y, z]`.      |
+|                    | `poa_x`, `poa_y`, `poa_z`       | Individual components of the point of application.       |
 |                    | `rotation`                      | Rotation applied to the mesh `[rx, ry, rz]`.             |
 |                    | `translation`                   | Translation applied to the mesh `[tx, ty, tz]`.          |
 |                    | `volume`                        | Displaced volume of the mesh.                            |
