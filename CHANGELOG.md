@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-18
+
+- Small types and fixed in the documentation and settings files
+
 ## [0.3.0] - 2026-06-18
 
 ### Changed
