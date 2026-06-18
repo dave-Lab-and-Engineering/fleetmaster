@@ -39,7 +39,11 @@ def _print_mesh_details(mesh_info_group: Any) -> None:
     """Prints formatted geometric properties of a mesh from its HDF5 group."""
     attrs = mesh_info_group.attrs
     vol = attrs.get("volume", "N/A")
-    cog = (attrs.get("cog_x", "N/A"), attrs.get("cog_y", "N/A"), attrs.get("cog_z", "N/A"))
+    poa = (
+        attrs.get("poa_x", "N/A"),
+        attrs.get("poa_y", "N/A"),
+        attrs.get("poa_z", "N/A"),
+    )
     dims = (attrs.get("bbox_lx", "N/A"), attrs.get("bbox_ly", "N/A"), attrs.get("bbox_lz", "N/A"))
 
     num_faces: str | int = "N/A"
@@ -57,9 +61,9 @@ def _print_mesh_details(mesh_info_group: Any) -> None:
     click.echo(f"      Cells: {num_faces}")
     click.echo(f"      Volume: {vol:.4f}" if isinstance(vol, float) else f"      Volume: {vol}")
     click.echo(
-        f"      COG (x,y,z): ({cog[0]:.3f}, {cog[1]:.3f}, {cog[2]:.3f})"
-        if all(isinstance(c, float) for c in cog)
-        else f"      COG (x,y,z): {cog}"
+        f"      POA (x,y,z): ({poa[0]:.3f}, {poa[1]:.3f}, {poa[2]:.3f})"
+        if all(isinstance(c, float) for c in poa)
+        else f"      POA (x,y,z): {poa}"
     )
     click.echo(
         f"      BBox Dims (Lx,Ly,Lz): ({dims[0]:.3f}, {dims[1]:.3f}, {dims[2]:.3f})"

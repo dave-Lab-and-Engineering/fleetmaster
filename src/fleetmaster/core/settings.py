@@ -53,8 +53,10 @@ class MeshConfig(BaseModel):
     rotation: list[float] = Field(
         default_factory=lambda: [0.0, 0.0, 0.0], description="Rotation [roll, pitch, yaw] in degrees."
     )
-    cog: list[float] | None = Field(
-        default=None, description="Center of Gravity [x,y,z] for this mesh, around which moments are calculated."
+    poa: list[float] | None = Field(
+        default=None,
+        serialization_alias="poa",
+        description="Point of application [x,y,z] for this mesh, used for rotation and force application.",
     )
     wave_periods: float | list[float] | None = Field(
         default=None, description="Mesh-specific wave periods. Overrides global settings."
@@ -77,10 +79,10 @@ class MeshConfig(BaseModel):
             raise InvalidVectorLength(msg)
         return v
 
-    @field_validator("cog")
-    def check_cog_length(cls, v: list[float] | None) -> list[float] | None:
+    @field_validator("poa")
+    def check_poa_length(cls, v: list[float] | None) -> list[float] | None:
         if v is not None and len(v) != 3:
-            msg = "Cog must be a list of 3 floats or None"
+            msg = "Poa must be a list of 3 floats or None"
             raise InvalidVectorLength(msg)
         return v
 

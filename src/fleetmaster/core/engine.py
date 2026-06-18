@@ -210,8 +210,8 @@ def _prepare_trimesh_geometry(stl_file: str, mesh_config: MeshConfig | None = No
     """
     Loads an STL file and applies the specified translation and rotation.
 
-    The rotation (roll, pitch, yaw) is performed around the center of gravity (cog)
-    if specified in the mesh_config. If no cog is specified, the mesh's geometric
+    The rotation (roll, pitch, yaw) is performed around the point of application (poa)
+    if specified in the mesh_config. If no poa is specified, the mesh's geometric
     center of mass is used as the rotation point. If no configuration is given,
     the untransformed loaded mesh is returned.
 
@@ -227,7 +227,7 @@ def _prepare_trimesh_geometry(stl_file: str, mesh_config: MeshConfig | None = No
         mesh=mesh,
         translation_vector=mesh_config.translation,
         rotation_vector_deg=mesh_config.rotation,
-        cog=mesh_config.cog,
+        poa=mesh_config.poa,
     )
 
     if mesh_config.clip_to_waterplane:
@@ -264,7 +264,7 @@ def _apply_mesh_translation_and_rotation(
     mesh: trimesh.Trimesh,
     translation_vector: npt.NDArray[np.float64] | list | None = None,
     rotation_vector_deg: npt.NDArray[np.float64] | list | None = None,
-    cog: npt.NDArray[np.float64] | list | None = None,
+    poa: npt.NDArray[np.float64] | list | None = None,
 ) -> trimesh.Trimesh:
     """Apply a translation and rotation to a mesh object."""
     translation_vector = np.asarray(translation_vector) if translation_vector is not None else np.zeros(3)
@@ -285,12 +285,12 @@ def _apply_mesh_translation_and_rotation(
     # In our case the scaling factor always S = 1.
     transform_matrix = np.identity(4)
 
-    # Apply rotation around the COG if specified
+    # Apply rotation around the POA if specified
     if has_rotation:
         # Determine the point of rotation
-        if cog is not None:
-            rotation_point = np.asarray(cog)
-            logger.debug(f"Using specified COG {rotation_point} as rotation point.")
+        if poa is not None:
+            rotation_point = np.asarray(poa)
+            logger.debug(f"Using specified POA {rotation_point} as rotation point.")
         else:
             rotation_point = mesh.center_mass
             logger.debug(f"Using geometric center of mass {rotation_point} as rotation point.")
@@ -329,19 +329,19 @@ def _prepare_capytaine_body(
     """
     Configures a Capytaine FloatingBody from a pre-prepared trimesh object.
 
-    The `center_of_mass` for Capytaine is determined by `mesh_config.cog`,
-    falling back to the mesh's geometric center of mass. If no cog is given in
+    The `center_of_mass` for Capytaine is determined by `mesh_config.poa`,
+    falling back to the mesh's geometric center of mass. If no poa is given in
     the settings file, the geometric center of mass is used.
     """
-    cog = None
+    poa = None
 
-    if engine_mesh.config.cog:
-        cog = np.array(engine_mesh.config.cog)
-        logger.debug(f"Using specified COG {cog} as the center of mass for Capytaine.")
+    if engine_mesh.config.poa:
+        poa = np.array(engine_mesh.config.poa)
+        logger.debug(f"Using specified POA {poa} as the center of mass for Capytaine.")
     else:
         # If no local_origin is specified, use the center of mass of the (already translated) source_mesh.
-        cog = engine_mesh.mesh.center_mass
-        logger.debug(f"Using geometric center of mass {cog} of the translated mesh for Capytaine.")
+        poa = engine_mesh.mesh.center_mass
+        logger.debug(f"Using geometric center of mass {poa} of the translated mesh for Capytaine.")
 
     # Save the transformed mesh to a temporary file and load it with Capytaine.
     # This is more robust than creating a cpt.Mesh from vertices/faces directly.
@@ -369,7 +369,7 @@ def _prepare_capytaine_body(
         logger.debug("Applying grid symmetery")
         hull_mesh = cpt.ReflectionSymmetricMesh(hull_mesh, plane=cpt.xOz_Plane)
 
-    boat = cpt.FloatingBody(mesh=hull_mesh, lid_mesh=lid_mesh, center_of_mass=cog)
+    boat = cpt.FloatingBody(mesh=hull_mesh, lid_mesh=lid_mesh, center_of_mass=poa)
     boat.keep_immersed_part(free_surface=water_level)
 
     # Check for empty mesh after keep_immersed_part
@@ -437,9 +437,9 @@ def _write_mesh_to_group(
     # Calculate geometric properties from the new mesh content
     fingerprint_attrs = {
         "volume": mesh_to_add.volume,
-        "cog_x": mesh_to_add.center_mass[0],
-        "cog_y": mesh_to_add.center_mass[1],
-        "cog_z": mesh_to_add.center_mass[2],
+        "poa_x": mesh_to_add.center_mass[0],
+        "poa_y": mesh_to_add.center_mass[1],
+        "poa_z": mesh_to_add.center_mass[2],
         "bbox_lx": mesh_to_add.bounding_box.extents[0],
         "bbox_ly": mesh_to_add.bounding_box.extents[1],
         "bbox_lz": mesh_to_add.bounding_box.extents[2],
@@ -456,8 +456,8 @@ def _write_mesh_to_group(
             group.attrs["translation"] = mesh_config.translation
         if mesh_config.rotation:
             group.attrs["rotation"] = mesh_config.rotation
-        if mesh_config.cog:
-            group.attrs["cog"] = mesh_config.cog
+        if mesh_config.poa:
+            group.attrs["poa"] = mesh_config.poa
 
     group.create_dataset("inertia_tensor", data=mesh_to_add.moment_inertia)
     logger.debug("  - Wrote dataset: inertia_tensor")
@@ -824,7 +824,7 @@ def _log_pipeline_parameters(
         "Output file": output_file,
         "Grid symmetry": settings.grid_symmetry,
         "Use lid": settings.lid,
-        "Add COG": settings.add_center_of_mass,
+        "Add POA": settings.add_center_of_mass,
         "Direction(s) [rad]": wave_directions_rad,
         "Wave period(s) [s]": wave_periods,
         "Water depth(s) [m]": water_depths,
@@ -948,8 +948,8 @@ def _process_and_save_single_case(
     transformation_matrix = None
     if origin_translation is not None:
         origin_translation = np.asarray(origin_translation)
-        # The transformation is the translation from the global origin to the mesh's COG for this case.
-        # Note: boat.center_of_mass is the COG used for calculation, not necessarily the geometric center.
+        # The transformation is the translation from the global origin to the mesh's POA for this case.
+        # Note: boat.center_of_mass is the POA used for calculation, not necessarily the geometric center.
         translation_vector = boat.center_of_mass - origin_translation
         transformation_matrix = trimesh.transformations.translation_matrix(translation_vector)
 
@@ -973,7 +973,7 @@ def _process_and_save_single_case(
         if transformation_matrix is not None:
             database.attrs["transformation_matrix"] = transformation_matrix
         if boat.center_of_mass is not None:
-            database.attrs["cog_for_calculation"] = boat.center_of_mass
+            database.attrs["poa_for_calculation"] = boat.center_of_mass
         database.to_netcdf(output_file, mode="a", group=group_name, engine="h5netcdf")
 
     if resolved_output_dhyd_file is not None:

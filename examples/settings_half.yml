@@ -23,15 +23,15 @@ heading_symmetry: true
 stl_files:
   - file: "defraction_box_half_1m.stl"
     translation: [0.0, 0.0, -0.791]
-    # this puts the cog in the centre at the water level
-    cog: [0.0, 0.0, 0.0]
+    # this puts the poa in the centre at the water level
+    poa: [0.0, 0.0, 0.0]
     # This mesh will use the global wave_periods and wave_directions.
 
   - file: "defraction_box_half_2m.stl"
     translation: [0, 0.0, -2.0]
     # This mesh overrides the global wave_directions with its own specific values.
     wave_directions: [0, 90, 180]
-    # if no  cog is given it is at the real cog, i.e. (0, 0, -1) in this caee
+    # if no poa is given it is at the geometric center of mass, i.e. (0, 0, -1) in this case
 
 wave_periods: [8.0, 10.0, 12.0]
 wave_directions: [0, 45, 90, 135, 180]

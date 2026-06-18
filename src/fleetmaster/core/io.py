@@ -44,7 +44,7 @@ def load_meshes_from_hdf5(
                 # Load attributes if they exist
                 mesh.metadata["translation"] = group.attrs.get("translation")
                 mesh.metadata["rotation"] = group.attrs.get("rotation")
-                mesh.metadata["cog"] = group.attrs.get("cog")
+                mesh.metadata["poa"] = group.attrs.get("poa")
                 meshes.append(mesh)
         except Exception:
             logger.exception("Failed to parse mesh %r", name)

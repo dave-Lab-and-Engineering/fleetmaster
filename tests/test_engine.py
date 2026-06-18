@@ -160,7 +160,7 @@ def test_prepare_capytaine_body(mock_tempfile, mock_cpt, tmp_path: Path):
     mock_cpt.FloatingBody.return_value = mock_body
 
     mock_mesh_config = MagicMock(spec=MeshConfig)
-    mock_mesh_config.cog = None
+    mock_mesh_config.poa = None
 
     mock_engine_mesh = EngineMesh(name="test_mesh", mesh=mock_source_mesh, config=mock_mesh_config)
 
@@ -203,7 +203,7 @@ def test_prepare_capytaine_body_with_symmetry(mock_tempfile, mock_cpt, tmp_path:
     mock_cpt.ReflectionSymmetricMesh.return_value = mock_symmetric_mesh
 
     mock_mesh_config = MagicMock(spec=MeshConfig)
-    mock_mesh_config.cog = None
+    mock_mesh_config.poa = None
 
     mock_engine_mesh = EngineMesh(name="test_mesh", mesh=mock_source_mesh, config=mock_mesh_config)
 
@@ -672,7 +672,7 @@ def test_add_mesh_to_database_with_meshconfig_attrs(mock_h5py_file, tmp_path):
         name="test_mesh",
         translation=[1, 1, 1],
         rotation=[2, 2, 2],
-        cog=[3, 3, 3],
+        poa=[3, 3, 3],
     )
     mock_mesh = MagicMock(spec=trimesh.Trimesh)
     mock_mesh.export.return_value = b"content"
@@ -689,7 +689,7 @@ def test_add_mesh_to_database_with_meshconfig_attrs(mock_h5py_file, tmp_path):
     mock_file.create_group.assert_called_once_with("meshes/test_mesh")
     mock_group.attrs.__setitem__.assert_any_call("translation", [1, 1, 1])
     mock_group.attrs.__setitem__.assert_any_call("rotation", [2, 2, 2])
-    mock_group.attrs.__setitem__.assert_any_call("cog", [3, 3, 3])
+    mock_group.attrs.__setitem__.assert_any_call("poa", [3, 3, 3])
 
 
 @patch("fleetmaster.core.engine._load_or_generate_mesh")
