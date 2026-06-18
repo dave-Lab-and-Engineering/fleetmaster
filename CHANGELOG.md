@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-18
+
+### Changed
+
+- **Breaking Change**: Renamed `cog` (center of gravity) to `poa` (point of application) across configuration, engine logic, CLI output, and examples.
+- Terminology now reflects intended usage: the force application point does not have to be the physical center of gravity.
+
+### Migration
+
+- Update all user settings files and integrations from `cog` to `poa`.
+- Existing workflows that still use `cog` keys/attributes must be migrated before upgrading to `0.3.0`.
+
 ## [0.2.3] - 2026-06-10
 
 ### Added
