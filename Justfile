@@ -103,9 +103,17 @@ build-and-publish-test: build publish-test
 docs-test:
     @uv run mkdocs build -s
 
+# Build documentation once (no live server)
+docs-build:
+    @uv run mkdocs build
+
 # Build and serve the documentation
 docs:
     @uv run mkdocs serve
+
+# Publish documentation to the gh-pages branch
+docs-publish:
+    @uv run mkdocs gh-deploy --force
 
 
 # ---------------------------------------
