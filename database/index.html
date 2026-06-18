@@ -21,8 +21,11 @@
         <link rel="next" href="../fitting/">
       
       
+        
+      
+      
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -30,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -62,7 +65,6 @@
     
       
 
-    
     
     
   </head>
@@ -377,9 +379,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Home
+  
+
     
   </span>
+  
   
 
       </a>
@@ -399,9 +406,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     General
+  
+
     
   </span>
+  
   
 
       </a>
@@ -430,9 +442,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Solution Database
+  
+
     
   </span>
+  
   
 
           <span class="md-nav__icon md-icon"></span>
@@ -443,9 +460,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Solution Database
+  
+
     
   </span>
+  
   
 
       </a>
@@ -468,7 +490,9 @@
         <li class="md-nav__item">
   <a href="#introduction" class="md-nav__link">
     <span class="md-ellipsis">
-      Introduction
+      
+        Introduction
+      
     </span>
   </a>
   
@@ -477,7 +501,9 @@
         <li class="md-nav__item">
   <a href="#mesh-definitions" class="md-nav__link">
     <span class="md-ellipsis">
-      Mesh definitions
+      
+        Mesh definitions
+      
     </span>
   </a>
   
@@ -486,7 +512,9 @@
         <li class="md-nav__item">
   <a href="#hdf5-file-structure" class="md-nav__link">
     <span class="md-ellipsis">
-      HDF5 file structure
+      
+        HDF5 file structure
+      
     </span>
   </a>
   
@@ -496,7 +524,9 @@
           <li class="md-nav__item">
   <a href="#root-attributes" class="md-nav__link">
     <span class="md-ellipsis">
-      Root Attributes
+      
+        Root Attributes
+      
     </span>
   </a>
   
@@ -505,7 +535,9 @@
           <li class="md-nav__item">
   <a href="#case-group" class="md-nav__link">
     <span class="md-ellipsis">
-      Case Group
+      
+        Case Group
+      
     </span>
   </a>
   
@@ -514,7 +546,9 @@
           <li class="md-nav__item">
   <a href="#meshes-group" class="md-nav__link">
     <span class="md-ellipsis">
-      Meshes Group
+      
+        Meshes Group
+      
     </span>
   </a>
   
@@ -545,9 +579,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Mesh Fitting
+  
+
     
   </span>
+  
   
 
       </a>
@@ -567,9 +606,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Modules
+  
+
     
   </span>
+  
   
 
       </a>
@@ -606,7 +650,9 @@
         <li class="md-nav__item">
   <a href="#introduction" class="md-nav__link">
     <span class="md-ellipsis">
-      Introduction
+      
+        Introduction
+      
     </span>
   </a>
   
@@ -615,7 +661,9 @@
         <li class="md-nav__item">
   <a href="#mesh-definitions" class="md-nav__link">
     <span class="md-ellipsis">
-      Mesh definitions
+      
+        Mesh definitions
+      
     </span>
   </a>
   
@@ -624,7 +672,9 @@
         <li class="md-nav__item">
   <a href="#hdf5-file-structure" class="md-nav__link">
     <span class="md-ellipsis">
-      HDF5 file structure
+      
+        HDF5 file structure
+      
     </span>
   </a>
   
@@ -634,7 +684,9 @@
           <li class="md-nav__item">
   <a href="#root-attributes" class="md-nav__link">
     <span class="md-ellipsis">
-      Root Attributes
+      
+        Root Attributes
+      
     </span>
   </a>
   
@@ -643,7 +695,9 @@
           <li class="md-nav__item">
   <a href="#case-group" class="md-nav__link">
     <span class="md-ellipsis">
-      Case Group
+      
+        Case Group
+      
     </span>
   </a>
   
@@ -652,7 +706,9 @@
           <li class="md-nav__item">
   <a href="#meshes-group" class="md-nav__link">
     <span class="md-ellipsis">
-      Meshes Group
+      
+        Meshes Group
+      
     </span>
   </a>
   
@@ -673,6 +729,7 @@
           
           
             <div class="md-content" data-md-component="content">
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -686,16 +743,32 @@
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
 <p>Fleetmaster is used to generate an HDF5 database containing a collection of Capytaine solutions based on a single base mesh. The solutions can vary depending on parameters such as the draft of the mesh, rotation of the mesh, forward speed of the vessel (an input parameter for Capytaine), or the water depth. Each individual mesh transformation (based on draft and rotation) is stored in the <code>/meshes</code> group. All solutions are stored in separate groups within the HDF5 database. A single solution always references the name of the input mesh used and includes all other parameters that were varied for that specific case.</p>
 <h2 id="mesh-definitions">Mesh definitions<a class="headerlink" href="#mesh-definitions" title="Permanent link">¶</a></h2>
-<p>Each HDF5 database is built around a single <strong>base mesh</strong>. This base mesh serves as the fundamental reference geometry. It has a <code>base_origin</code> point, which should correspond to a known world coordinate point when you position the mesh in a global context. The name of this base mesh is stored as a root-level attribute named <code>base_mesh</code> in the HDF5 file. The geometry of the base mesh itself is stored as a dataset within the <code>/meshes</code> group.</p>
+<p>Each HDF5 database is built around a single <strong>base mesh</strong>. This base mesh serves as the fundamental reference geometry.</p>
+<p><figure id="_figure-1"><img alt="image-20251104162052926" src="../image-20251104162052926.png"><figcaption>Figure 1: image-20251104162052926</figcaption></figure></p>
+<p>On this base-mesh we define a base_origin_position. If the STL was provided using a good convention then this can be left at (0,0,0).</p>
+<p>It is highly recommended to textually describe which point on the vessel the base-origin defines. In the example above this could be "Aft perpendicular, keel, centerline".</p>
+<p><strong>On the base-mesh, we</strong></p>
+<p><strong>The origin of the base-mesh should correspond to a known point POINT ON THE VESSEL.</strong></p>
+<p><strong>The scale of the mesh should be meters</strong></p>
+<p><strong>The origin of the mesh, as well as the axis definition, shall be documented as text.</strong></p>
+<p><strong>Recommendation:</strong></p>
+<ul>
+<li><strong>Origin: stern, centerline, keel</strong></li>
+<li><strong>X towards bow</strong></li>
+<li><strong>Y towards PS</strong></li>
+<li><strong>Z upwards</strong></li>
+</ul>
+<p>point when you position the mesh in a global context. The name of this base mesh is stored as a root-level attribute named <code>base_mesh</code> in the HDF5 file. The geometry of the base mesh itself is stored as a dataset within the <code>/meshes</code> group.</p>
 <p>In addition to the base mesh, the <code>/meshes</code> group can contain multiple <strong>candidate meshes</strong>. Each candidate mesh represents a variation of the base mesh and has the following characteristics:</p>
 <ul>
 <li>A unique mesh name.</li>
 <li>Its own geometry, stored as a dataset.</li>
-<li>A <code>translation</code> and <code>rotation</code> attribute, which define its position and orientation relative to the base mesh's <code>base_origin</code>.</li>
-<li>A specific <code>cog</code> (center of gravity) attribute. This <code>cog</code> is used by Capytaine as the center for the BEM (Boundary Element Method) solution.</li>
+<li>A <code>translation</code> and <code>rotation</code> attribute, which define its position and orientation relative to the base mesh</li>
+<li>A specific <code>poa</code> (point of application) attribute. This <code>poa</code> is used by Capytaine as the center for the BEM (Boundary Element Method) solution.</li>
+<li><strong>The point of application is the point on which the calculated forces act and relative to which the phases are calculated.</strong> <strong>Typical locations are the center of flotation or the center of buoyancy.</strong></li>
 </ul>
 <p>The transformation from the base mesh to a candidate mesh is applied in a specific order: first, rotation is performed around the <code>cog</code>, and then translation is applied. These transformation attributes are stored for each mesh.</p>
-<p><figure id="_figure-1"><img alt="Mesh locations as defined in the database structure" id="database" src="../images/database.svg"><figcaption>Figure 1: Mesh locations as defined in the database structure</figcaption></figure></p>
+<p><figure id="_figure-2"><img alt="Mesh locations as defined in the database structure" id="database" src="../images/database.svg"><figcaption>Figure 2: Mesh locations as defined in the database structure</figcaption></figure></p>
 <p>In <a href="#database">Figure 1</a>, the relation between the base mesh and the different candidate meshes is shown.
 The black box represents the base mesh, assumed to be with its keel on the water surface (<span class="arithmatex">\(z=0\)</span>) and its stern at <span class="arithmatex">\(x=0\)</span> and <span class="arithmatex">\(y=0\)</span>.
 The base mesh can be any STL file representing the floating body for which you want to calculate the force response values.
@@ -704,10 +777,10 @@ Both the base name and origin are stored at the root level of the database.
 You can relate the base mesh to the real world by connecting the <code>base_origin</code> to your real-world coordinate system.</p>
 <p>Normally, the base mesh is not used directly to calculate hydrodynamic data with Capytaine. This is done using the candidate mesh positions.
 In <a href="#database">Figure 1</a>, these are represented by the green, red, and yellow boxes, labeled candidate mesh 1, 2, and 3, respectively.
-The relationship between the base mesh and a candidate mesh is defined by a translation vector, a rotation vector, and a center of gravity (CoG) vector for the mesh.
-The CoG vector does not have to correspond to the geometric center of gravity of your mesh (although this is chosen by default if no vector is provided).
-It can often be set to (0,0,0), which is typically at the center of the waterline. The CoG position is also used as the center of rotation.</p>
-<p>In our example, both the red and green meshes are shifted backward so that the CoG of the mesh is at (0, 0, 0). The mesh itself is shifted downward to establish the vessel's draft. The rotation for the green and red boxes is assumed to be (0, 0, 0).</p>
+The relationship between the base mesh and a candidate mesh is defined by a translation vector, a rotation vector, and a point of application (POA) vector for the mesh.
+The POA vector does not have to correspond to the geometric center of gravity of your mesh (although this is chosen by default if no vector is provided).
+It can often be set to (0,0,0), which is typically at the center of the waterline. The POA position is also used as the center of rotation.</p>
+<p>In our example, both the red and green meshes are shifted backward so that the POA of the mesh is at (0, 0, 0). The mesh itself is shifted downward to establish the vessel's draft. The rotation for the green and red boxes is assumed to be (0, 0, 0).</p>
 <p>The yellow box shows an example of a candidate mesh that is shifted downward and given a small positive rotation about the y-axis. This is stored in the rotation vector belonging to the yellow mesh.</p>
 <p>All candidate meshes are stored with a unique name in the HDF5 database under the <code>/meshes</code> group.</p>
 <p>Then, we can define Capytaine cases for each of these candidate meshes. One mesh can be associated with multiple cases, but a single case can only be linked to one mesh. This allows us to define multiple cases for a similar geometry, enabling variations such as forward speed or water depth to be studied.
@@ -882,13 +955,13 @@ There are two major groups: a <code>meshes</code> group (containing all meshes) 
 </tr>
 <tr>
 <td style="text-align: left;"></td>
-<td style="text-align: left;"><code>cog</code></td>
-<td style="text-align: left;">Center of gravity used by Capytaine <code>[x, y, z]</code>.</td>
+<td style="text-align: left;"><code>poa</code></td>
+<td style="text-align: left;">Point of application used by Capytaine <code>[x, y, z]</code>.</td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
-<td style="text-align: left;"><code>cog_x</code>, <code>cog_y</code>, <code>cog_z</code></td>
-<td style="text-align: left;">Individual components of the center of gravity.</td>
+<td style="text-align: left;"><code>poa_x</code>, <code>poa_y</code>, <code>poa_z</code></td>
+<td style="text-align: left;">Individual components of the point of application.</td>
 </tr>
 <tr>
 <td style="text-align: left;"></td>
@@ -991,10 +1064,11 @@ There are two major groups: a <code>meshes</code> group (containing all meshes) 
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "content.code.copy", "content.code.annotate", "content.code.mermaid"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "content.code.copy", "content.code.annotate", "content.code.mermaid"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

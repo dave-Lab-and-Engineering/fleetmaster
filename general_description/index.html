@@ -21,8 +21,11 @@
         <link rel="next" href="../database/">
       
       
+        
+      
+      
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -30,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -62,7 +65,6 @@
     
       
 
-    
     
     
   </head>
@@ -377,9 +379,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Home
+  
+
     
   </span>
+  
   
 
       </a>
@@ -408,9 +415,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     General
+  
+
     
   </span>
+  
   
 
           <span class="md-nav__icon md-icon"></span>
@@ -421,9 +433,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     General
+  
+
     
   </span>
+  
   
 
       </a>
@@ -446,7 +463,9 @@
         <li class="md-nav__item">
   <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
-      Summary
+      
+        Summary
+      
     </span>
   </a>
   
@@ -455,7 +474,9 @@
         <li class="md-nav__item">
   <a href="#core-concepts" class="md-nav__link">
     <span class="md-ellipsis">
-      Core Concepts
+      
+        Core Concepts
+      
     </span>
   </a>
   
@@ -464,7 +485,9 @@
         <li class="md-nav__item">
   <a href="#solution-database" class="md-nav__link">
     <span class="md-ellipsis">
-      Solution Database
+      
+        Solution Database
+      
     </span>
   </a>
   
@@ -473,7 +496,9 @@
         <li class="md-nav__item">
   <a href="#mesh-fitting" class="md-nav__link">
     <span class="md-ellipsis">
-      Mesh Fitting
+      
+        Mesh Fitting
+      
     </span>
   </a>
   
@@ -482,7 +507,20 @@
         <li class="md-nav__item">
   <a href="#typical-workflow" class="md-nav__link">
     <span class="md-ellipsis">
-      Typical Workflow
+      
+        Typical Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#symmetry-setting-for-dhyd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symmetry Setting for .dhyd
+      
     </span>
   </a>
   
@@ -508,9 +546,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Solution Database
+  
+
     
   </span>
+  
   
 
       </a>
@@ -530,9 +573,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Mesh Fitting
+  
+
     
   </span>
+  
   
 
       </a>
@@ -552,9 +600,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Modules
+  
+
     
   </span>
+  
   
 
       </a>
@@ -591,7 +644,9 @@
         <li class="md-nav__item">
   <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
-      Summary
+      
+        Summary
+      
     </span>
   </a>
   
@@ -600,7 +655,9 @@
         <li class="md-nav__item">
   <a href="#core-concepts" class="md-nav__link">
     <span class="md-ellipsis">
-      Core Concepts
+      
+        Core Concepts
+      
     </span>
   </a>
   
@@ -609,7 +666,9 @@
         <li class="md-nav__item">
   <a href="#solution-database" class="md-nav__link">
     <span class="md-ellipsis">
-      Solution Database
+      
+        Solution Database
+      
     </span>
   </a>
   
@@ -618,7 +677,9 @@
         <li class="md-nav__item">
   <a href="#mesh-fitting" class="md-nav__link">
     <span class="md-ellipsis">
-      Mesh Fitting
+      
+        Mesh Fitting
+      
     </span>
   </a>
   
@@ -627,7 +688,20 @@
         <li class="md-nav__item">
   <a href="#typical-workflow" class="md-nav__link">
     <span class="md-ellipsis">
-      Typical Workflow
+      
+        Typical Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#symmetry-setting-for-dhyd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Symmetry Setting for .dhyd
+      
     </span>
   </a>
   
@@ -643,6 +717,7 @@
           
           
             <div class="md-content" data-md-component="content">
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -654,7 +729,12 @@
 
 <h1 id="general-description-of-fleetmaster">General Description of <code>fleetmaster</code><a class="headerlink" href="#general-description-of-fleetmaster" title="Permanent link">¶</a></h1>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
-<p><code>fleetmaster</code> is a command-line tool designed to simplify running batch processes with <a href="https://capytaine.github.io/">Capytaine</a>, an open-source Python library for simulating wave-structure interactions. While Capytaine provides powerful tools for hydrodynamic analysis, <code>fleetmaster</code> streamlines the process of running multiple simulations with varying parameters, managing inputs, and organizing outputs. It acts as a wrapper, allowing users to define a fleet of simulations in a structured way and execute them with a single command.</p>
+<p><strong>Fleetmaster is a data-storage structure for hydrodynamic data such as produced by Capytaine.</strong></p>
+<p><strong>It allows multiple hydrodynamic databases to be stored together and provides methods for extracting the most suitable one.</strong></p>
+<p><strong>Intended use-case is the storage of hydrodynamic data for a single vessel but at different drafts, inclinations and/or forwards speeds.</strong></p>
+<p><strong>Fleetmaster includes convenience functions and command line tools for creating such datasets using capytaine.</strong></p>
+<p><code>fleetmaster</code> is a command-line tool designed to simplify running batch processes with <a href="https://capytaine.github.io/">Capytaine</a>, an open-source Python library for simulating wave-structure interactions. While Capytaine provides powerful tools for hydrodynamic analysis, <code>fleetmaster</code> streamlines the process of running multiple simulations with varying parameters, managing inputs, and organizing outputs.</p>
+<p>It acts as a wrapper, allowing users to define a fleet of simulations in a structured way and execute them with a single command.</p>
 <h2 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">¶</a></h2>
 <p>The main goal of <code>fleetmaster</code> is to automate the execution of multiple hydrodynamic simulations using Capytaine. This is achieved through a few core concepts:</p>
 <ul>
@@ -665,7 +745,15 @@
 <h2 id="solution-database">Solution Database<a class="headerlink" href="#solution-database" title="Permanent link">¶</a></h2>
 <p>The solution for each mesh and set of simulation settings are stored in a database. The database can subsequently be used by external programs to quickly access each Capytaine solution. For more details on the database, see <a href="../database/">Database</a>.</p>
 <h2 id="mesh-fitting">Mesh Fitting<a class="headerlink" href="#mesh-fitting" title="Permanent link">¶</a></h2>
-<p>In addition to running batch simulations, <code>fleetmaster</code> also provides a powerful mesh fitting capability. This feature allows you to find the best-matching mesh from a database of pre-calculated meshes based on a target transformation (translation and rotation). This is particularly useful for finding the most relevant hydrodynamic data for a specific loading condition without running a new simulation.</p>
+<p>In addition to running batch simulations, <code>fleetmaster</code> also provides a powerful mesh fitting capability. This feature allows you to find the best-matching mesh from a database of pre-calculated meshes based on a target transformation (translation and rotation). <strong>= Draft, heel, trim</strong></p>
+<p><strong>Consider the following case:</strong></p>
+<p><strong>Target draft: 3m, target roll 0, target pitch 0</strong></p>
+<p><strong>Option1:</strong></p>
+<p><strong>draft 3m, pitch 1 degree, roll 0 degrees</strong></p>
+<p><strong>Option2:</strong></p>
+<p><strong>draft 2.8m, pitch 0 degrees, roll 0 degrees</strong></p>
+<p><strong>which one should we use?</strong></p>
+<p>This is particularly useful for finding the most relevant hydrodynamic data for a specific loading condition without running a new simulation.</p>
 <p>For more details, see the <a href="../fitting/">Mesh Fitting</a> documentation.</p>
 <h2 id="typical-workflow">Typical Workflow<a class="headerlink" href="#typical-workflow" title="Permanent link">¶</a></h2>
 <p>A typical workflow for using <code>fleetmaster</code> involves the following steps:</p>
@@ -680,6 +768,14 @@
     A[Prepare Meshes] --&gt; B[Create Settings File];
     B --&gt; C[Run fleetmaster];
     C --&gt; D[Analyze Results];</code></pre>
+<h2 id="symmetry-setting-for-dhyd">Symmetry Setting for <code>.dhyd</code><a class="headerlink" href="#symmetry-setting-for-dhyd" title="Permanent link">¶</a></h2>
+<p>If you export to <code>.dhyd</code>, you can store heading symmetry metadata by enabling:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">heading_symmetry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>For physically consistent half-domain workflows, also enable:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">grid_symmetry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<p>When <code>heading_symmetry</code> is enabled, Fleetmaster writes XZ symmetry metadata in the <code>.dhyd</code> output.</p>
 
 
 
@@ -759,10 +855,11 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "content.code.copy", "content.code.annotate", "content.code.mermaid"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "content.code.copy", "content.code.annotate", "content.code.mermaid"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

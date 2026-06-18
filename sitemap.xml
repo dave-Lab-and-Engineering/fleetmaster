@@ -2,22 +2,26 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://dave-lab-and-engineering.github.io/fleetmaster/</loc>
-         <lastmod>1980-01-01</lastmod>
+         <lastmod>2026-06-18</lastmod>
     </url>
     <url>
          <loc>https://dave-lab-and-engineering.github.io/fleetmaster/database/</loc>
-         <lastmod>1980-01-01</lastmod>
+         <lastmod>2026-06-18</lastmod>
     </url>
     <url>
          <loc>https://dave-lab-and-engineering.github.io/fleetmaster/fitting/</loc>
-         <lastmod>1980-01-01</lastmod>
+         <lastmod>2026-06-18</lastmod>
     </url>
     <url>
          <loc>https://dave-lab-and-engineering.github.io/fleetmaster/general_description/</loc>
-         <lastmod>1980-01-01</lastmod>
+         <lastmod>2026-06-18</lastmod>
+    </url>
+    <url>
+         <loc>https://dave-lab-and-engineering.github.io/fleetmaster/gui/</loc>
+         <lastmod>2026-06-18</lastmod>
     </url>
     <url>
          <loc>https://dave-lab-and-engineering.github.io/fleetmaster/modules/</loc>
-         <lastmod>1980-01-01</lastmod>
+         <lastmod>2026-06-18</lastmod>
     </url>
 </urlset>

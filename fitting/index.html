@@ -21,8 +21,11 @@
         <link rel="next" href="../modules/">
       
       
+        
+      
+      
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -30,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -62,7 +65,6 @@
     
       
 
-    
     
     
   </head>
@@ -377,9 +379,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Home
+  
+
     
   </span>
+  
   
 
       </a>
@@ -399,9 +406,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     General
+  
+
     
   </span>
+  
   
 
       </a>
@@ -421,9 +433,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Solution Database
+  
+
     
   </span>
+  
   
 
       </a>
@@ -452,9 +469,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Mesh Fitting
+  
+
     
   </span>
+  
   
 
           <span class="md-nav__icon md-icon"></span>
@@ -465,9 +487,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Mesh Fitting
+  
+
     
   </span>
+  
   
 
       </a>
@@ -490,7 +517,9 @@
         <li class="md-nav__item">
   <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
-      How it Works
+      
+        How it Works
+      
     </span>
   </a>
   
@@ -499,7 +528,9 @@
         <li class="md-nav__item">
   <a href="#illustration-of-a-use-case" class="md-nav__link">
     <span class="md-ellipsis">
-      Illustration of a Use Case
+      
+        Illustration of a Use Case
+      
     </span>
   </a>
   
@@ -508,7 +539,9 @@
         <li class="md-nav__item">
   <a href="#usage-example" class="md-nav__link">
     <span class="md-ellipsis">
-      Usage Example
+      
+        Usage Example
+      
     </span>
   </a>
   
@@ -534,9 +567,14 @@
   
   
   <span class="md-ellipsis">
+    
+  
     Modules
+  
+
     
   </span>
+  
   
 
       </a>
@@ -573,7 +611,9 @@
         <li class="md-nav__item">
   <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
-      How it Works
+      
+        How it Works
+      
     </span>
   </a>
   
@@ -582,7 +622,9 @@
         <li class="md-nav__item">
   <a href="#illustration-of-a-use-case" class="md-nav__link">
     <span class="md-ellipsis">
-      Illustration of a Use Case
+      
+        Illustration of a Use Case
+      
     </span>
   </a>
   
@@ -591,7 +633,9 @@
         <li class="md-nav__item">
   <a href="#usage-example" class="md-nav__link">
     <span class="md-ellipsis">
-      Usage Example
+      
+        Usage Example
+      
     </span>
   </a>
   
@@ -607,6 +651,7 @@
           
           
             <div class="md-content" data-md-component="content">
+              
               <article class="md-content__inner md-typeset">
                 
                   
@@ -643,9 +688,12 @@
 </ol>
 <h2 id="illustration-of-a-use-case">Illustration of a Use Case<a class="headerlink" href="#illustration-of-a-use-case" title="Permanent link">¶</a></h2>
 <p><figure id="_figure-1"><img alt="World mesh location (left) making use of candidate meshes stored in the database (right)" id="fitting" src="../images/fitting_targets.svg"><figcaption>Figure 1: World mesh location (left) making use of candidate meshes stored in the database (right)</figcaption></figure></p>
-<p><a href="#fitting">Figure 2</a> illustrates how mesh fitting works. On the left, we see the same database of candidate meshes as described in the previous section. On the right, we have two example target meshes: Target Mesh 1 (purple) and Target Mesh 2 (cyan).</p>
+<p><a href="#fitting">Figure 2</a> illustrates how mesh fitting works. On the left <strong>RIGHT</strong>, we see the same database of candidate meshes as described in the previous section. On the right <strong>LEFT</strong>, we have two example target meshes: Target Mesh 1 (purple) and Target Mesh 2 (cyan).</p>
+<p><strong>Only the submerged parts of the meshes are present, except for the base-mesh</strong></p>
 <p>Target Mesh 1 has no rotation and a draft very close to that of Candidate Mesh 2. We would therefore want to use the solution belonging to Candidate Mesh 2. To find this best match, the target mesh is translated and rotated according to each of our candidate meshes, but only for the XY-plane translation and the Z-axis rotation (yaw). The reason for this is that the Capytaine solution is independent of the mesh's location in the XY-plane; only the draft (Z-translation) and roll/pitch (X/Y-rotations) are relevant.</p>
-<p>Therefore, we first align our target mesh with each candidate in the XY-plane. Then, we calculate the mean distance between the submerged parts of both the target and the candidate. We use the <strong>Chamfer distance</strong> for this, which is the root mean square distance between all mesh points. This Chamfer distance is calculated for all our candidate meshes. The mesh with the smallest Chamfer distance is the best fit for our case. For Target Mesh 1, this would be Candidate Mesh 2, as it yields the smallest Chamfer distance.</p>
+<p>Therefore, we first align our target mesh with each candidate in the XY-plane. Then, we calculate the mean distance between the submerged parts of both the target and the candidate. We use the <strong>Chamfer distance</strong> for this, which is the root mean square distance between all mesh points.</p>
+<p><strong>This is very inconvenient as the mesh resolution may be different</strong></p>
+<p>This Chamfer distance is calculated for all our candidate meshes. The mesh with the smallest Chamfer distance is the best fit for our case. For Target Mesh 1, this would be Candidate Mesh 2, as it yields the smallest Chamfer distance.</p>
 <p>The second target mesh has a deeper draft and a slight pitch around the x-axis. In this case, the third candidate mesh would yield the smallest Chamfer distance after the meshes have been translated to the same position in the XY-plane.</p>
 <h2 id="usage-example">Usage Example<a class="headerlink" href="#usage-example" title="Permanent link">¶</a></h2>
 <p>Here is an example of how to use the <code>find_best_matching_mesh</code> function:</p>
@@ -751,10 +799,11 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "content.code.copy", "content.code.annotate", "content.code.mermaid"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "content.code.copy", "content.code.annotate", "content.code.mermaid"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       
